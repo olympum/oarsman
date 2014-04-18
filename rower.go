@@ -10,6 +10,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -265,8 +266,13 @@ func (s4 S4) InformationHandler(b []byte) {
 		}
 		v, err := strconv.ParseInt(string(b[6:(6+2*l)]), 16, 8*l)
 		if err == nil {
+			// we operate at 25ms resolution, so Unix() is too coarse
+			// we use a syscall directly to avoid time parsing costs
+			var tv syscall.Timeval
+			syscall.Gettimeofday(&tv)
+			millis := (int64(tv.Sec)*1e3 + int64(tv.Usec)/1e3)
 			s4.workout.callback(Event{
-				time:  time.Now().Unix(),
+				time:  millis,
 				label: s4.memorymap[address].label,
 				value: v})
 		} else {
@@ -296,7 +302,7 @@ type Workout struct {
 func main() {
 
 	logCallback := func(event Event) {
-		log.Printf("Rowing event: %s %d %d", event.label, event.value, event.time)
+		fmt.Printf("%d %s %d\n", event.time, event.label, event.value)
 	}
 	workout := Workout{distanceMeters: 10000, callback: logCallback}
 
