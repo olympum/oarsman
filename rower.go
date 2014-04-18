@@ -52,8 +52,6 @@ func (p Packet) Bytes() []byte {
 	return b.Bytes()
 }
 
-type HandlerFunc func(b []byte)
-
 type S4 struct {
 	port      io.ReadWriteCloser
 	scanner   *bufio.Scanner
@@ -75,15 +73,22 @@ func NewS4(workout Workout) S4 {
 		return ""
 	}
 
+	name := FindUsbSerialModem()
+	if len(name) == 0 {
+		log.Fatal("S4 USB serial modem port not found")
+	}
+
 	c := &goserial.Config{Name: FindUsbSerialModem(), Baud: 115200, CRLFTranslate: true}
 	p, err := goserial.OpenPort(c)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// these are the things we want captured from the S4
 	memorymap := map[string]MemoryEntry{
 		"055": MemoryEntry{"total_distance_meters", "D", 16},
-		"1A9": MemoryEntry{"stroke_rate", "S", 16}}
+		"1A9": MemoryEntry{"stroke_rate", "S", 16},
+		"1A0": MemoryEntry{"heart_rate", "D", 16}}
 
 	s4 := S4{port: p, scanner: bufio.NewScanner(p), memorymap: memorymap, workout: workout}
 	return s4
@@ -134,9 +139,9 @@ func (s4 S4) OnPacketReceived(b []byte) {
 	case 'I':
 		s4.InformationHandler(b)
 	case 'O':
-		s4.OKHandler(b)
+		s4.OKHandler()
 	case 'E':
-		s4.ErrorHandler(b)
+		s4.ErrorHandler()
 	case 'P':
 		s4.PingHandler(b)
 	case 'S':
@@ -155,11 +160,11 @@ func (s4 S4) WRHandler(b []byte) {
 	}
 }
 
-func (s4 S4) OKHandler(b []byte) {
+func (s4 S4) OKHandler() {
 	// TODO: remove matching OK request from pending queue
 }
 
-func (s4 S4) ErrorHandler(b []byte) {
+func (s4 S4) ErrorHandler() {
 	// TODO: implement error packet
 }
 
@@ -213,14 +218,23 @@ func (s4 S4) InformationHandler(b []byte) {
 		time.Sleep(25 * time.Millisecond) // per spec, wait 25 ms between requests
 
 		// send workout instructions
-		var payload string
-		if s4.workout.distanceMeters > 0 {
-			payload = Meters + strconv.FormatInt(10000, 16) // TODO distance unit
-		} else if s4.workout.durationSeconds > 0 {
+		distanceMeters := s4.workout.distanceMeters
+		durationSeconds := s4.workout.durationSeconds
+		if distanceMeters > 0 {
+			if distanceMeters >= 64000 {
+				log.Fatalf("Workout distance must be less than 64,000 meters (was %d)", distanceMeters)
+			}
+			payload := Meters + strconv.FormatInt(distanceMeters, 16)
+			s4.Write(Packet{cmd: WorkoutSetDistanceRequest, data: []byte(payload)})
+		} else if durationSeconds > 0 {
+			if durationSeconds >= 4650 {
+				log.Fatalf("Workout time must be less than 4,650 seconds (was %d)", durationSeconds)
+			}
+			payload := strconv.FormatInt(durationSeconds, 16)
+			s4.Write(Packet{cmd: WorkoutSetDurationRequest, data: []byte(payload)})
 		} else {
 			log.Fatal("Undefined workout")
 		}
-		s4.Write(Packet{cmd: WorkoutSetDistanceRequest, data: []byte(payload)})
 
 		// start capturing
 		var f = func(s4 S4) {
@@ -251,8 +265,10 @@ func (s4 S4) InformationHandler(b []byte) {
 		}
 		v, err := strconv.ParseInt(string(b[6:(6+2*l)]), 16, 8*l)
 		if err == nil {
-			s4.workout.callback(Event{time: time.Now().UnixNano(),
-				label: s4.memorymap[address].label, value: v})
+			s4.workout.callback(Event{
+				time:  time.Now().Unix(),
+				label: s4.memorymap[address].label,
+				value: v})
 		} else {
 			log.Println("error parsing int: ", err)
 		}
@@ -260,10 +276,7 @@ func (s4 S4) InformationHandler(b []byte) {
 }
 
 const (
-	Meters  = "1"
-	Miles   = "2"
-	Kms     = "3"
-	Strokes = "4"
+	Meters = "1"
 )
 
 type Event struct {
@@ -276,9 +289,8 @@ type EventCallbackFunc func(event Event)
 
 type Workout struct {
 	callback        EventCallbackFunc
-	durationSeconds int
-	distanceMeters  int // TODO support all distance units
-	// TODO support interval workouts
+	durationSeconds int64
+	distanceMeters  int64
 }
 
 func main() {
