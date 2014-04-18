@@ -302,7 +302,7 @@ type Workout struct {
 func main() {
 
 	logCallback := func(event Event) {
-		fmt.Printf("%d %s %d\n", event.time, event.label, event.value)
+		fmt.Printf("%d %s:%d\n", event.time, event.label, event.value)
 	}
 	workout := Workout{distanceMeters: 10000, callback: logCallback}
 
