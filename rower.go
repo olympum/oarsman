@@ -9,6 +9,8 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
@@ -58,20 +60,62 @@ const (
 	Unset             = 0
 	ResetWaitingPing  = 1
 	ResetPingReceived = 2
+	WorkoutStarted    = 3
+	WorkoutCompleted  = 4
+	WorkoutExited     = 5
 )
 
-type S4 struct {
-	port          io.ReadWriteCloser
-	scanner       *bufio.Scanner
-	memorymap     map[string]MemoryEntry
+const (
+	Meters = "1"
+)
+
+type Event struct {
+	time  int64
+	label string
+	value int64
+}
+
+type Workout struct {
 	workoutPacket Packet
-	callback      EventCallbackFunc
 	state         int
+}
+
+func NewWorkout(duration time.Duration, distanceMeters int64) Workout {
+	// prepare workout instructions
+	durationSeconds := int64(duration.Seconds())
+	var workoutPacket Packet
+
+	if durationSeconds > 0 {
+		log.Printf("Starting single duration workout: %d seconds", durationSeconds)
+		if durationSeconds >= 18000 {
+			log.Fatalf("Workout time must be less than 18,000 seconds (was %d)", durationSeconds)
+		}
+		payload := fmt.Sprintf("%04X", durationSeconds)
+		workoutPacket = Packet{cmd: WorkoutSetDurationRequest, data: []byte(payload)}
+	} else if distanceMeters > 0 {
+		log.Printf("Starting single distance workout: %d meters", distanceMeters)
+		if distanceMeters >= 64000 {
+			log.Fatalf("Workout distance must be less than 64,000 meters (was %d)", distanceMeters)
+		}
+		payload := Meters + fmt.Sprintf("%04X", distanceMeters)
+		workoutPacket = Packet{cmd: WorkoutSetDistanceRequest, data: []byte(payload)}
+	} else {
+		log.Fatal("Undefined workout")
+	}
+	workout := Workout{workoutPacket: workoutPacket}
+	return workout
+}
+
+type S4 struct {
+	port     io.ReadWriteCloser
+	scanner  *bufio.Scanner
+	workout  Workout
+	callback EventCallbackFunc
 }
 
 type EventCallbackFunc func(event Event)
 
-func NewS4(workout Workout, callback EventCallbackFunc) S4 {
+func NewS4(callback EventCallbackFunc) S4 {
 
 	FindUsbSerialModem := func() string {
 		contents, _ := ioutil.ReadDir("/dev")
@@ -96,37 +140,7 @@ func NewS4(workout Workout, callback EventCallbackFunc) S4 {
 		log.Fatal(err)
 	}
 
-	// these are the things we want captured from the S4
-	memorymap := map[string]MemoryEntry{
-		"055": MemoryEntry{"total_distance_meters", "D", 16},
-		"1A9": MemoryEntry{"stroke_rate", "S", 16},
-		"1A0": MemoryEntry{"heart_rate", "D", 16}}
-
-	// prepare workout instructions
-	distanceMeters := workout.distanceMeters
-	durationSeconds := int64(workout.duration.Seconds())
-	var workoutPacket Packet
-
-	if durationSeconds > 0 {
-		log.Printf("Starting single duration workout: %d seconds", durationSeconds)
-		if durationSeconds >= 18000 {
-			log.Fatalf("Workout time must be less than 18,000 seconds (was %d)", durationSeconds)
-		}
-		payload := fmt.Sprintf("%04X", durationSeconds)
-		workoutPacket = Packet{cmd: WorkoutSetDurationRequest, data: []byte(payload)}
-	} else if distanceMeters > 0 {
-		log.Printf("Starting single distance workout: %d meters", distanceMeters)
-		if distanceMeters >= 64000 {
-			log.Fatalf("Workout distance must be less than 64,000 meters (was %d)", distanceMeters)
-		}
-		payload := Meters + fmt.Sprintf("%04X", distanceMeters)
-		workoutPacket = Packet{cmd: WorkoutSetDistanceRequest, data: []byte(payload)}
-	} else {
-		log.Fatal("Undefined workout")
-	}
-
-	s4 := S4{port: p, scanner: bufio.NewScanner(p), memorymap: memorymap,
-		workoutPacket: workoutPacket, callback: callback, state: Unset}
+	s4 := S4{port: p, scanner: bufio.NewScanner(p), callback: callback}
 	return s4
 }
 
@@ -135,16 +149,23 @@ func (s4 *S4) Write(p Packet) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("written %s (%d+1 bytes)", strings.TrimRight(string(p.Bytes()), "\n"), n-1)
+	if *g_debug {
+		log.Printf("written %s (%d+1 bytes)", strings.TrimRight(string(p.Bytes()), "\n"), n-1)
+	}
+	time.Sleep(25 * time.Millisecond) // yield per spec
 }
 
 func (s4 *S4) Read() {
 	for s4.scanner.Scan() {
 		b := s4.scanner.Bytes()
 		if len(b) > 0 {
-			log.Printf("read %s (%d+1 bytes)", string(b), len(b))
-			time.Sleep(25 * time.Millisecond)
+			if *g_debug {
+				log.Printf("read %s (%d+1 bytes)", string(b), len(b))
+			}
 			s4.OnPacketReceived(b)
+			if s4.workout.state == WorkoutCompleted || s4.workout.state == WorkoutExited {
+				return
+			}
 		}
 	}
 
@@ -153,16 +174,23 @@ func (s4 *S4) Read() {
 	}
 }
 
-func (s4 *S4) Run() {
+func (s4 *S4) Run(workout Workout) {
 	// send connection command and start listening
+	s4.workout = workout
+	s4.workout.state = Unset
 	s4.Write(Packet{cmd: UsbRequest})
 	s4.Read()
+	s4.Exit()
+}
+
+func (s4 *S4) Exit() {
+	if s4.workout.state != WorkoutExited {
+		s4.Write(Packet{cmd: ExitRequest})
+		s4.workout.state = WorkoutExited
+	}
 }
 
 func (s4 *S4) OnPacketReceived(b []byte) {
-	// TODO enable verbose cli options flag
-	// log.Println(string(b))
-
 	// responses can start with:
 	// _ : _WR_
 	// O : OK
@@ -197,29 +225,20 @@ func (s4 *S4) WRHandler(b []byte) {
 	}
 }
 
-func (s4 *S4) OKHandler() {
-	if s4.state == ResetPingReceived {
+func (s4 *S4) ReadMemoryRequest(address string, size string) {
+	cmd := ReadMemoryRequest + size
+	data := []byte(address)
+	s4.Write(Packet{cmd: cmd, data: data})
+}
 
-		// start capturing
-		var f = func(s4 S4) {
-			for {
-				for address, mmap := range s4.memorymap {
-					cmd := ReadMemoryRequest + mmap.size
-					data := []byte(address)
-					s4.Write(Packet{cmd: cmd, data: data})
-					time.Sleep(25 * time.Millisecond)
-				}
-			}
-		}
-		go f(*s4)
-		s4.Read()
-	}
+func (s4 *S4) OKHandler() {
+	// ignore
 }
 
 func (s4 *S4) ErrorHandler() {
-	if s4.state == ResetPingReceived {
+	if s4.workout.state == ResetPingReceived {
 		s4.Write(Packet{cmd: ResetRequest})
-		s4.state = ResetWaitingPing
+		s4.workout.state = ResetWaitingPing
 	}
 }
 
@@ -227,16 +246,31 @@ func (s4 *S4) PingHandler(b []byte) {
 	c := b[1]
 	switch c {
 	case 'I': // PING
-		if s4.state == ResetWaitingPing {
-			s4.state = ResetPingReceived
-			s4.Write(s4.workoutPacket)
+		if s4.workout.state == ResetWaitingPing {
+			s4.workout.state = ResetPingReceived
+			s4.Write(s4.workout.workoutPacket)
+		} else if s4.workout.state == WorkoutStarted {
+			s4.workout.state = WorkoutCompleted
 		}
 	default: // P
 		// TODO implement P packet
 	}
 }
 
+var g_memorymap = map[string]MemoryEntry{
+	"055": MemoryEntry{"total_distance_meters", "D", 16},
+	"1A9": MemoryEntry{"stroke_rate", "S", 16},
+	"1A0": MemoryEntry{"heart_rate", "D", 16}}
+
 func (s4 *S4) StrokeHandler(b []byte) {
+	if s4.workout.state == ResetPingReceived {
+		s4.workout.state = WorkoutStarted
+		// these are the things we want captured from the S4
+		for address, mmap := range g_memorymap {
+			s4.ReadMemoryRequest(address, mmap.size)
+		}
+	}
+
 	c := b[1]
 	switch c {
 	case 'S': // SS
@@ -273,12 +307,10 @@ func (s4 *S4) InformationHandler(b []byte) {
 		}
 
 		// we are ready to start workout
-		s4.state = ResetWaitingPing
+		s4.workout.state = ResetWaitingPing
 		s4.Write(Packet{cmd: ResetRequest})
-		time.Sleep(25 * time.Millisecond)
 
 	case 'D': // memory value
-		//log.Printf("memory value: %s", string(b))
 		size := b[2]
 		address := string(b[3:6])
 
@@ -300,31 +332,22 @@ func (s4 *S4) InformationHandler(b []byte) {
 			millis := (int64(tv.Sec)*1e3 + int64(tv.Usec)/1e3)
 			s4.callback(Event{
 				time:  millis,
-				label: s4.memorymap[address].label,
+				label: g_memorymap[address].label,
 				value: v})
+			// we re-request the data
+			if s4.workout.state == WorkoutStarted {
+				s4.ReadMemoryRequest(address, string(size))
+			}
 		} else {
 			log.Println("error parsing int: ", err)
 		}
 	}
 }
 
-const (
-	Meters = "1"
-)
-
-type Event struct {
-	time  int64
-	label string
-	value int64
-}
-
-type Workout struct {
-	duration       time.Duration
-	distanceMeters int64
-}
+var g_debug = flag.Bool("debug", false, "debug communication data packets")
 
 func main() {
-	log.Println("Gorower")
+	log.Println("Press CTRL+C to interrupt (otherwise program will terminate normally as rower stops sending data)")
 
 	var distanceFlag = flag.Int64("distance", 10000, "distance to row in meters")
 	var durationFlag = flag.Duration("duration", 0, "duration to row (e.g. 1800s or 45m")
@@ -336,16 +359,20 @@ func main() {
 	logCallback := func(event Event) {
 		fmt.Printf("%d %s:%d\n", event.time, event.label, event.value)
 	}
-	workout := Workout{distanceMeters: *distanceFlag, duration: *durationFlag}
+	workout := NewWorkout(*durationFlag, *distanceFlag)
 
-	s4 := NewS4(workout, logCallback)
+	s4 := NewS4(logCallback)
 
-	log.Println("press enter to stop ...")
-	// TODO allow goroutine channel
-	go s4.Run() // TODO pass workout to Run() not struct constructor
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for sig := range c {
+			log.Print("Received signal " + sig.String())
+			s4.Exit()
+			os.Exit(0)
+		}
+	}()
 
-	var input string
-	fmt.Scanln(&input)
-	fmt.Println("done")
-
+	// TODO allow goroutine channel to interrupt workout
+	s4.Run(workout) // TODO pass workout to Run() not struct constructor
 }
