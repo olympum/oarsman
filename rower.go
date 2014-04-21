@@ -249,8 +249,6 @@ func (s4 *S4) PingHandler(b []byte) {
 		if s4.workout.state == ResetWaitingPing {
 			s4.workout.state = ResetPingReceived
 			s4.Write(s4.workout.workoutPacket)
-		} else if s4.workout.state == WorkoutStarted {
-			s4.workout.state = WorkoutCompleted
 		}
 	default: // P
 		// TODO implement P packet
@@ -263,17 +261,16 @@ var g_memorymap = map[string]MemoryEntry{
 	"1A0": MemoryEntry{"heart_rate", "D", 16}}
 
 func (s4 *S4) StrokeHandler(b []byte) {
-	if s4.workout.state == ResetPingReceived {
-		s4.workout.state = WorkoutStarted
-		// these are the things we want captured from the S4
-		for address, mmap := range g_memorymap {
-			s4.ReadMemoryRequest(address, mmap.size)
-		}
-	}
-
 	c := b[1]
 	switch c {
 	case 'S': // SS
+		if s4.workout.state == ResetPingReceived {
+			s4.workout.state = WorkoutStarted
+			// these are the things we want captured from the S4
+			for address, mmap := range g_memorymap {
+				s4.ReadMemoryRequest(address, mmap.size)
+			}
+		}
 		// TODO implement SS packet
 	case 'E': // SE
 		// TODO implement SE packet
