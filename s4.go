@@ -69,7 +69,7 @@ const (
 type Event struct {
 	time  int64
 	label string
-	value int64
+	value uint64
 }
 
 type Workout struct {
@@ -104,14 +104,14 @@ func NewWorkout(duration time.Duration, distanceMeters int64) Workout {
 }
 
 type S4 struct {
-	port     io.ReadWriteCloser
-	scanner  *bufio.Scanner
-	workout  Workout
-	callback EventCallbackFunc
-	debug    bool
+	port    io.ReadWriteCloser
+	scanner *bufio.Scanner
+	workout Workout
+	channel chan Event
+	debug   bool
 }
 
-type EventCallbackFunc func(event Event)
+type EventCallbackFunc func(event chan Event)
 
 func NewS4(callback EventCallbackFunc, debug bool) S4 {
 
@@ -138,7 +138,10 @@ func NewS4(callback EventCallbackFunc, debug bool) S4 {
 		log.Fatal(err)
 	}
 
-	s4 := S4{port: p, scanner: bufio.NewScanner(p), callback: callback, debug: debug}
+	channel := make(chan (Event))
+	go callback(channel)
+
+	s4 := S4{port: p, scanner: bufio.NewScanner(p), channel: channel, debug: debug}
 	return s4
 }
 
@@ -262,6 +265,9 @@ type MemoryEntry struct {
 var g_memorymap = map[string]MemoryEntry{
 	"055": MemoryEntry{"total_distance_meters", "D", 16},
 	"1A9": MemoryEntry{"stroke_rate", "S", 16},
+	"088": MemoryEntry{"watts", "D", 16},
+	"08A": MemoryEntry{"calories", "T", 16},
+	"148": MemoryEntry{"speed_cm_s", "D", 16},
 	"1A0": MemoryEntry{"heart_rate", "D", 16}}
 
 func (s4 *S4) StrokeHandler(b []byte) {
@@ -318,17 +324,17 @@ func (s4 *S4) InformationHandler(b []byte) {
 		case 'T':
 			l = 3
 		}
-		v, err := strconv.ParseInt(string(b[6:(6+2*l)]), 16, 8*l)
+		v, err := strconv.ParseUint(string(b[6:(6+2*l)]), 16, 8*l)
 		if err == nil {
 			// we operate at 25ms resolution, so Unix() is too coarse
 			// we use a syscall directly to avoid time parsing costs
 			var tv syscall.Timeval
 			syscall.Gettimeofday(&tv)
 			millis := (int64(tv.Sec)*1e3 + int64(tv.Usec)/1e3)
-			s4.callback(Event{
+			s4.channel <- Event{
 				time:  millis,
 				label: g_memorymap[address].label,
-				value: v})
+				value: v}
 			// we re-request the data
 			if s4.workout.state == WorkoutStarted {
 				s4.ReadMemoryRequest(address, string(size))
