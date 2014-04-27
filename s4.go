@@ -249,7 +249,7 @@ func (s4 *S4) PingHandler(b []byte) {
 			s4.Write(s4.workout.workoutPacket)
 		}
 	default: // P
-		// TODO implement P packet
+		// TODO implement P (pulse) packet
 	}
 }
 
@@ -275,9 +275,9 @@ func (s4 *S4) StrokeHandler(b []byte) {
 				s4.ReadMemoryRequest(address, mmap.size)
 			}
 		}
-		// TODO implement SS packet
+		// TODO implement SS (stroke start) packet
 	case 'E': // SE
-		// TODO implement SE packet
+		// TODO implement SE (stroke end) packet
 	}
 }
 

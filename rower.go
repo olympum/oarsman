@@ -19,8 +19,11 @@ func main() {
 		log.Fatal(flag.ErrHelp)
 	}
 
-	logCallback := func(event Event) {
-		fmt.Printf("%d %s:%d\n", event.time, event.label, event.value)
+	logCallback := func(ch chan Event) {
+		for {
+			event := <-ch
+			fmt.Printf("%d %s:%d\n", event.time, event.label, event.value)
+		}
 	}
 	workout := NewWorkout(*durationFlag, *distanceFlag)
 
