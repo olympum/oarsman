@@ -1,4 +1,4 @@
-package main
+package s4
 
 import (
 	"bufio"
@@ -67,9 +67,9 @@ const (
 )
 
 type Event struct {
-	time  int64
-	label string
-	value uint64
+	Time  int64
+	Label string
+	Value uint64
 }
 
 type Workout struct {
@@ -332,9 +332,9 @@ func (s4 *S4) InformationHandler(b []byte) {
 			syscall.Gettimeofday(&tv)
 			millis := (int64(tv.Sec)*1e3 + int64(tv.Usec)/1e3)
 			s4.channel <- Event{
-				time:  millis,
-				label: g_memorymap[address].label,
-				value: v}
+				Time:  millis,
+				Label: g_memorymap[address].label,
+				Value: v}
 			// we re-request the data
 			if s4.workout.state == WorkoutStarted {
 				s4.ReadMemoryRequest(address, string(size))

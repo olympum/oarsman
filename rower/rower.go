@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/olympum/gorower/s4"
 	"log"
 	"os"
 	"os/signal"
@@ -21,16 +22,16 @@ func main() {
 	// client mode
 	log.Println("CLI mode - Press CTRL+C to interrupt")
 
-	logCallback := func(ch chan Event) {
+	logCallback := func(ch chan s4.Event) {
 		for {
 			event := <-ch
-			fmt.Printf("%d %s:%d\n", event.time, event.label, event.value)
+			fmt.Printf("%d %s:%d\n", event.Time, event.Label, event.Value)
 		}
 	}
 
-	workout := NewWorkout(*durationFlag, *distanceFlag)
+	workout := s4.NewWorkout(*durationFlag, *distanceFlag)
 
-	s4 := NewS4(logCallback, *debug)
+	s4 := s4.NewS4(logCallback, *debug)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
