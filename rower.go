@@ -9,15 +9,17 @@ import (
 )
 
 func main() {
-	log.Println("Press CTRL+C to interrupt")
-
-	var distanceFlag = flag.Int64("distance", 10000, "distance to row in meters")
-	var durationFlag = flag.Duration("duration", 0, "duration to row (e.g. 1800s or 45m")
+	var distanceFlag = flag.Int64("distance", 0, "distance to row in meters")
+	var durationFlag = flag.Duration("duration", 0, "duration to row (e.g. 1800s or 45m)")
 	var debug = flag.Bool("debug", false, "debug communication data packets")
+
 	flag.Parse()
 	if !flag.Parsed() {
 		log.Fatal(flag.ErrHelp)
 	}
+
+	// client mode
+	log.Println("CLI mode - Press CTRL+C to interrupt")
 
 	logCallback := func(ch chan Event) {
 		for {
@@ -25,6 +27,7 @@ func main() {
 			fmt.Printf("%d %s:%d\n", event.time, event.label, event.value)
 		}
 	}
+
 	workout := NewWorkout(*durationFlag, *distanceFlag)
 
 	s4 := NewS4(logCallback, *debug)
