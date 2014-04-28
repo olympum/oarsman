@@ -1,0 +1,27 @@
+* {
+    box-sizing: border-box;
+}
+ 
+body {
+    background-color: #eee;
+    font: 100%/1.5 "Source Sans Pro", "Helvetica Neue", Helvetica, sans-serif;
+    padding-top: 2em;
+}
+ 
+.container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ddd;
+}
+ 
+h1 {
+    margin-top: 0;
+}
+ 
+#messages {
+    max-height: 480px;
+    overflow-y: auto;
+}
