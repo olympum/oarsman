@@ -233,7 +233,10 @@ func (s4 *S4) ReadMemoryRequest(address string, size string) {
 }
 
 func (s4 *S4) OKHandler() {
-	// ignore
+	s4.channel <- Event{
+		Time:  millis(),
+		Label: "okay",
+		Value: 0}
 }
 
 func (s4 *S4) ErrorHandler() {
@@ -251,8 +254,21 @@ func (s4 *S4) PingHandler(b []byte) {
 			s4.workout.state = ResetPingReceived
 			s4.Write(s4.workout.workoutPacket)
 		}
+		s4.channel <- Event{
+			Time:  millis(),
+			Label: "ping",
+			Value: 0}
 	default: // P
-		// TODO implement P (pulse) packet
+		// The WaterRower is now provided with a toothed wheel and optical
+		// detector such that a pulse train containing 57 pulses per
+		// revolution can be recorded for the purposes of paddle speed
+		// measurement
+		pulses := string(b[1:3])
+		value, _ := strconv.ParseUint(pulses, 16, 8)
+		s4.channel <- Event{
+			Time:  millis(),
+			Label: "pulses_per_25ms",
+			Value: value}
 	}
 }
 
@@ -281,9 +297,15 @@ func (s4 *S4) StrokeHandler(b []byte) {
 				s4.ReadMemoryRequest(address, mmap.size)
 			}
 		}
-		// TODO implement SS (stroke start) packet
+		s4.channel <- Event{
+			Time:  millis(),
+			Label: "stroke_start",
+			Value: 1}
 	case 'E': // SE
-		// TODO implement SE (stroke end) packet
+		s4.channel <- Event{
+			Time:  millis(),
+			Label: "stroke_end",
+			Value: 0}
 	}
 }
 
@@ -326,13 +348,8 @@ func (s4 *S4) InformationHandler(b []byte) {
 		}
 		v, err := strconv.ParseUint(string(b[6:(6+2*l)]), 16, 8*l)
 		if err == nil {
-			// we operate at 25ms resolution, so Unix() is too coarse
-			// we use a syscall directly to avoid time parsing costs
-			var tv syscall.Timeval
-			syscall.Gettimeofday(&tv)
-			millis := (int64(tv.Sec)*1e3 + int64(tv.Usec)/1e3)
 			s4.channel <- Event{
-				Time:  millis,
+				Time:  millis(),
 				Label: g_memorymap[address].label,
 				Value: v}
 			// we re-request the data
@@ -343,4 +360,13 @@ func (s4 *S4) InformationHandler(b []byte) {
 			log.Println("error parsing int: ", err)
 		}
 	}
+}
+
+func millis() int64 {
+	// we operate at 25ms resolution, so Unix() is too coarse
+	// we use a syscall directly to avoid time parsing costs
+	var tv syscall.Timeval
+	syscall.Gettimeofday(&tv)
+	millis := (int64(tv.Sec)*1e3 + int64(tv.Usec)/1e3)
+	return millis
 }
