@@ -22,7 +22,7 @@ type S4Options struct {
 
 type S4Client struct {
 	s4      s4.S4Interface
-	workout s4.Workout
+	workout s4.S4Workout
 }
 
 func NewS4Client(options S4Options) S4Client {
@@ -79,13 +79,14 @@ func NewS4Client(options S4Options) S4Client {
 	eventChannel := make(chan s4.Event)
 	go logger(eventChannel)
 
-	var workout s4.Workout
+	var workout s4.S4Workout
 
 	var s s4.S4Interface
 	if options.In != "" {
 		s = s4.NewReplayS4(eventChannel, options.Debug, options.In, options.Replay)
 	} else {
-		workout = s4.NewWorkout(options.Duration, options.Total_distance_meters)
+		workout = s4.NewS4Workout()
+		workout.AddSingleWorkout(options.Duration, options.Total_distance_meters)
 		s = s4.NewS4(eventChannel, options.Debug)
 	}
 

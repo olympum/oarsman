@@ -26,7 +26,7 @@ func NewReplayS4(eventChannel chan Event, debug bool, replayfile string, replay 
 	return &ReplayS4{scanner: s, eventChannel: eventChannel, replay: replay, debug: debug}
 }
 
-func (s4 *ReplayS4) Run(workout Workout) {
+func (s4 *ReplayS4) Run(workout S4Workout) {
 	for s4.scanner.Scan() {
 		line := s4.scanner.Text()
 		tokens := strings.Split(line, " ")
