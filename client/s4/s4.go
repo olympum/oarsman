@@ -38,6 +38,11 @@ const (
 	AddIntervalWorkoutRequest         = "WIN"   // Add/End an interval to a workout
 )
 
+type S4Interface interface {
+	Run(Workout)
+	Exit()
+}
+
 type Packet struct {
 	cmd  string
 	data []byte
@@ -77,9 +82,9 @@ type Workout struct {
 	state         int
 }
 
-func NewWorkout(duration time.Duration, distanceMeters int64) Workout {
+func NewWorkout(duration time.Duration, distanceMeters uint64) Workout {
 	// prepare workout instructions
-	durationSeconds := int64(duration.Seconds())
+	durationSeconds := uint64(duration.Seconds())
 	var workoutPacket Packet
 
 	if durationSeconds > 0 {
@@ -111,9 +116,7 @@ type S4 struct {
 	debug   bool
 }
 
-type EventCallbackFunc func(event chan Event)
-
-func NewS4(callback EventCallbackFunc, debug bool) S4 {
+func NewS4(eventChannel chan Event, debug bool) S4Interface {
 
 	FindUsbSerialModem := func() string {
 		contents, _ := ioutil.ReadDir("/dev")
@@ -138,14 +141,11 @@ func NewS4(callback EventCallbackFunc, debug bool) S4 {
 		log.Fatal(err)
 	}
 
-	channel := make(chan (Event))
-	go callback(channel)
-
-	s4 := S4{port: p, scanner: bufio.NewScanner(p), channel: channel, debug: debug}
-	return s4
+	s4 := S4{port: p, scanner: bufio.NewScanner(p), channel: eventChannel, debug: debug}
+	return &s4
 }
 
-func (s4 *S4) Write(p Packet) {
+func (s4 *S4) write(p Packet) {
 	n, err := s4.port.Write(p.Bytes())
 	if err != nil {
 		log.Fatal(err)
@@ -156,14 +156,14 @@ func (s4 *S4) Write(p Packet) {
 	time.Sleep(25 * time.Millisecond) // yield per spec
 }
 
-func (s4 *S4) Read() {
+func (s4 *S4) read() {
 	for s4.scanner.Scan() {
 		b := s4.scanner.Bytes()
 		if len(b) > 0 {
 			if s4.debug {
 				log.Printf("read %s (%d+1 bytes)", string(b), len(b))
 			}
-			s4.OnPacketReceived(b)
+			s4.onPacketReceived(b)
 			if s4.workout.state == WorkoutCompleted || s4.workout.state == WorkoutExited {
 				return
 			}
@@ -179,19 +179,19 @@ func (s4 *S4) Run(workout Workout) {
 	// send connection command and start listening
 	s4.workout = workout
 	s4.workout.state = Unset
-	s4.Write(Packet{cmd: UsbRequest})
-	s4.Read()
+	s4.write(Packet{cmd: UsbRequest})
+	s4.read()
 	s4.Exit()
 }
 
 func (s4 *S4) Exit() {
 	if s4.workout.state != WorkoutExited {
-		s4.Write(Packet{cmd: ExitRequest})
+		s4.write(Packet{cmd: ExitRequest})
 		s4.workout.state = WorkoutExited
 	}
 }
 
-func (s4 *S4) OnPacketReceived(b []byte) {
+func (s4 *S4) onPacketReceived(b []byte) {
 	// responses can start with:
 	// _ : _WR_
 	// O : OK
@@ -201,58 +201,58 @@ func (s4 *S4) OnPacketReceived(b []byte) {
 	c := b[0]
 	switch c {
 	case '_':
-		s4.WRHandler(b)
+		s4.wRHandler(b)
 	case 'I':
-		s4.InformationHandler(b)
+		s4.informationHandler(b)
 	case 'O':
-		s4.OKHandler()
+		s4.oKHandler()
 	case 'E':
-		s4.ErrorHandler()
+		s4.errorHandler()
 	case 'P':
-		s4.PingHandler(b)
+		s4.pingHandler(b)
 	case 'S':
-		s4.StrokeHandler(b)
+		s4.strokeHandler(b)
 	default:
 		log.Printf("Unrecognized packet: %s", string(b))
 	}
 }
 
-func (s4 *S4) WRHandler(b []byte) {
+func (s4 *S4) wRHandler(b []byte) {
 	s := string(b)
 	if s == "_WR_" {
-		s4.Write(Packet{cmd: ModelInformationRequest})
+		s4.write(Packet{cmd: ModelInformationRequest})
 	} else {
 		log.Fatalf("Unknown WaterRower init command %s", s)
 	}
 }
 
-func (s4 *S4) ReadMemoryRequest(address string, size string) {
+func (s4 *S4) readMemoryRequest(address string, size string) {
 	cmd := ReadMemoryRequest + size
 	data := []byte(address)
-	s4.Write(Packet{cmd: cmd, data: data})
+	s4.write(Packet{cmd: cmd, data: data})
 }
 
-func (s4 *S4) OKHandler() {
+func (s4 *S4) oKHandler() {
 	s4.channel <- Event{
 		Time:  millis(),
 		Label: "okay",
 		Value: 0}
 }
 
-func (s4 *S4) ErrorHandler() {
+func (s4 *S4) errorHandler() {
 	if s4.workout.state == ResetPingReceived {
-		s4.Write(Packet{cmd: ResetRequest})
+		s4.write(Packet{cmd: ResetRequest})
 		s4.workout.state = ResetWaitingPing
 	}
 }
 
-func (s4 *S4) PingHandler(b []byte) {
+func (s4 *S4) pingHandler(b []byte) {
 	c := b[1]
 	switch c {
 	case 'I': // PING
 		if s4.workout.state == ResetWaitingPing {
 			s4.workout.state = ResetPingReceived
-			s4.Write(s4.workout.workoutPacket)
+			s4.write(s4.workout.workoutPacket)
 		}
 		s4.channel <- Event{
 			Time:  millis(),
@@ -286,7 +286,7 @@ var g_memorymap = map[string]MemoryEntry{
 	"148": MemoryEntry{"speed_cm_s", "D", 16},
 	"1A0": MemoryEntry{"heart_rate", "D", 16}}
 
-func (s4 *S4) StrokeHandler(b []byte) {
+func (s4 *S4) strokeHandler(b []byte) {
 	c := b[1]
 	switch c {
 	case 'S': // SS
@@ -294,7 +294,7 @@ func (s4 *S4) StrokeHandler(b []byte) {
 			s4.workout.state = WorkoutStarted
 			// these are the things we want captured from the S4
 			for address, mmap := range g_memorymap {
-				s4.ReadMemoryRequest(address, mmap.size)
+				s4.readMemoryRequest(address, mmap.size)
 			}
 		}
 		s4.channel <- Event{
@@ -309,7 +309,7 @@ func (s4 *S4) StrokeHandler(b []byte) {
 	}
 }
 
-func (s4 *S4) InformationHandler(b []byte) {
+func (s4 *S4) informationHandler(b []byte) {
 	c1 := b[1]
 	switch c1 {
 	case 'V': // version
@@ -331,7 +331,7 @@ func (s4 *S4) InformationHandler(b []byte) {
 
 		// we are ready to start workout
 		s4.workout.state = ResetWaitingPing
-		s4.Write(Packet{cmd: ResetRequest})
+		s4.write(Packet{cmd: ResetRequest})
 
 	case 'D': // memory value
 		size := b[2]
@@ -354,7 +354,7 @@ func (s4 *S4) InformationHandler(b []byte) {
 				Value: v}
 			// we re-request the data
 			if s4.workout.state == WorkoutStarted {
-				s4.ReadMemoryRequest(address, string(size))
+				s4.readMemoryRequest(address, string(size))
 			}
 		} else {
 			log.Println("error parsing int: ", err)

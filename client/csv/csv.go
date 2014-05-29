@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type Event struct {
+type AggregateEvent struct {
 	time                  int64
 	total_distance_meters int64
 	stroke_rate           int64
@@ -22,7 +22,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("time,total_distance_meters,stroke_rate,watts,calories,speed_cm_s,heart_rate")
 	var reftime int64
-	var event = Event{}
+	var event = AggregateEvent{}
 	for scanner.Scan() {
 		line := scanner.Text()
 		tokens := strings.Split(line, " ")
