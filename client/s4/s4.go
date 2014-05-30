@@ -70,46 +70,51 @@ const (
 	Meters = "1"
 )
 
-type Event struct {
+type AtomicEvent struct {
 	Time  int64
 	Label string
 	Value uint64
 }
 
 type S4 struct {
-	port    io.ReadWriteCloser
-	scanner *bufio.Scanner
-	workout S4Workout
-	channel chan Event
-	debug   bool
+	port      io.ReadWriteCloser
+	scanner   *bufio.Scanner
+	workout   S4Workout
+	collector Collector
+	debug     bool
 }
 
-func NewS4(eventChannel chan Event, debug bool) S4Interface {
+func findUsbSerialModem() string {
+	contents, _ := ioutil.ReadDir("/dev")
 
-	FindUsbSerialModem := func() string {
-		contents, _ := ioutil.ReadDir("/dev")
-
-		for _, f := range contents {
-			if strings.Contains(f.Name(), "cu.usbmodem") {
-				return "/dev/" + f.Name()
-			}
+	for _, f := range contents {
+		if strings.Contains(f.Name(), "cu.usbmodem") {
+			return "/dev/" + f.Name()
 		}
-
-		return ""
 	}
 
-	name := FindUsbSerialModem()
+	return ""
+}
+
+func openPort() io.ReadWriteCloser {
+	name := findUsbSerialModem()
 	if len(name) == 0 {
 		log.Fatal("S4 USB serial modem port not found")
 	}
 
-	c := &goserial.Config{Name: FindUsbSerialModem(), Baud: 115200, CRLFTranslate: true}
+	c := &goserial.Config{Name: name, Baud: 115200, CRLFTranslate: true}
 	p, err := goserial.OpenPort(c)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	s4 := S4{port: p, scanner: bufio.NewScanner(p), channel: eventChannel, debug: debug}
+	return p
+}
+
+func NewS4(eventChannel chan AtomicEvent, aggregateEventChannel chan AggregateEvent, debug bool) S4Interface {
+	p := openPort()
+	collector := NewCollector(eventChannel, aggregateEventChannel)
+	s4 := S4{port: p, scanner: bufio.NewScanner(p), collector: collector, debug: debug}
 	return &s4
 }
 
@@ -201,10 +206,10 @@ func (s4 *S4) readMemoryRequest(address string, size string) {
 }
 
 func (s4 *S4) oKHandler() {
-	s4.channel <- Event{
+	s4.collector.Consume(AtomicEvent{
 		Time:  millis(),
 		Label: "okay",
-		Value: 0}
+		Value: 0})
 }
 
 func (s4 *S4) errorHandler() {
@@ -224,10 +229,10 @@ func (s4 *S4) pingHandler(b []byte) {
 				s4.write(e.Value.(Packet))
 			}
 		}
-		s4.channel <- Event{
+		s4.collector.Consume(AtomicEvent{
 			Time:  millis(),
 			Label: "ping",
-			Value: 0}
+			Value: 0})
 	default: // P
 		// The WaterRower is now provided with a toothed wheel and optical
 		// detector such that a pulse train containing 57 pulses per
@@ -235,10 +240,10 @@ func (s4 *S4) pingHandler(b []byte) {
 		// measurement
 		pulses := string(b[1:3])
 		value, _ := strconv.ParseUint(pulses, 16, 8)
-		s4.channel <- Event{
+		s4.collector.Consume(AtomicEvent{
 			Time:  millis(),
 			Label: "pulses_per_25ms",
-			Value: value}
+			Value: value})
 	}
 }
 
@@ -267,15 +272,15 @@ func (s4 *S4) strokeHandler(b []byte) {
 				s4.readMemoryRequest(address, mmap.size)
 			}
 		}
-		s4.channel <- Event{
+		s4.collector.Consume(AtomicEvent{
 			Time:  millis(),
 			Label: "stroke_start",
-			Value: 1}
+			Value: 1})
 	case 'E': // SE
-		s4.channel <- Event{
+		s4.collector.Consume(AtomicEvent{
 			Time:  millis(),
 			Label: "stroke_end",
-			Value: 0}
+			Value: 0})
 	}
 }
 
@@ -318,10 +323,10 @@ func (s4 *S4) informationHandler(b []byte) {
 		}
 		v, err := strconv.ParseUint(string(b[6:(6+2*l)]), 16, 8*l)
 		if err == nil {
-			s4.channel <- Event{
+			s4.collector.Consume(AtomicEvent{
 				Time:  millis(),
 				Label: g_memorymap[address].label,
-				Value: v}
+				Value: v})
 			// we re-request the data
 			if s4.workout.state == WorkoutStarted {
 				s4.readMemoryRequest(address, string(size))

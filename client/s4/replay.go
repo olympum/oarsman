@@ -10,20 +10,21 @@ import (
 )
 
 type ReplayS4 struct {
-	scanner      *bufio.Scanner
-	eventChannel chan Event
-	replay       bool
-	debug        bool
+	scanner   *bufio.Scanner
+	collector Collector
+	replay    bool
+	debug     bool
 }
 
-func NewReplayS4(eventChannel chan Event, debug bool, replayfile string, replay bool) S4Interface {
+func NewReplayS4(eventChannel chan AtomicEvent, aggregateEventChannel chan AggregateEvent, debug bool, replayfile string, replay bool) S4Interface {
 	f, err := os.Open(replayfile)
 	if err != nil {
 		log.Fatalf("Could not read %s", replayfile)
 	}
 	log.Printf("Reading from %s", f.Name())
 	s := bufio.NewScanner(f)
-	return &ReplayS4{scanner: s, eventChannel: eventChannel, replay: replay, debug: debug}
+	collector := NewCollector(eventChannel, aggregateEventChannel)
+	return &ReplayS4{scanner: s, collector: collector, replay: replay, debug: debug}
 }
 
 func (s4 *ReplayS4) Run(workout S4Workout) {
@@ -34,11 +35,11 @@ func (s4 *ReplayS4) Run(workout S4Workout) {
 		values := strings.Split(tokens[1], ":")
 		label := values[0]
 		value, _ := strconv.ParseUint(values[1], 10, 64)
-		event := Event{Time: time, Label: label, Value: value}
+		event := AtomicEvent{Time: time, Label: label, Value: value}
 		if s4.debug {
 			log.Print(event)
 		}
-		s4.eventChannel <- event
+		s4.collector.Consume(event)
 		if s4.replay {
 			t.Sleep(t.Millisecond * 25)
 		}

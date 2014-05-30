@@ -11,41 +11,53 @@ type AggregateEvent struct {
 }
 
 type Collector struct {
-	Reftime int64
-	Event   AggregateEvent
-	Channel chan AggregateEvent
+	reftime               int64
+	event                 AggregateEvent
+	atomicEventChannel    chan AtomicEvent
+	aggregateEventChannel chan AggregateEvent
 }
 
-func NewCollector(channel chan AggregateEvent) Collector {
-	return Collector{Channel: channel, Reftime: 0, Event: AggregateEvent{}}
+func NewCollector(atomicEventChannel chan AtomicEvent, aggregateEventChannel chan AggregateEvent) Collector {
+	return Collector{
+		atomicEventChannel:    atomicEventChannel,
+		aggregateEventChannel: aggregateEventChannel,
+		reftime:               0,
+		event:                 AggregateEvent{}}
 }
 
-func (collector *Collector) Consume(event Event) {
-	if collector.Reftime == 0 {
-		collector.Reftime = event.Time - event.Time%100
-		collector.Event.Time = collector.Reftime + 100
+func (collector *Collector) Consume(event AtomicEvent) {
+	collector.atomicEventChannel <- event
+
+	if collector.aggregateEventChannel == nil {
+		return
+	}
+
+	if collector.reftime == 0 {
+		collector.reftime = event.Time - event.Time%100
+		collector.event.Time = collector.reftime + 100
 	}
 
 	v := event.Value
 	switch event.Label {
 	case "total_distance_meters":
-		collector.Event.Total_distance_meters = v
+		collector.event.Total_distance_meters = v
 	case "stroke_rate":
-		collector.Event.Stroke_rate = v
+		collector.event.Stroke_rate = v
 	case "watts":
 		if v > 0 {
-			collector.Event.Watts = v
+			collector.event.Watts = v
 		}
 	case "calories":
-		collector.Event.Calories = v
+		collector.event.Calories = v
 	case "speed_cm_s":
-		collector.Event.Speed_cm_s = v
+		collector.event.Speed_cm_s = v
 	case "heart_rate":
-		collector.Event.Heart_rate = v
+		collector.event.Heart_rate = v
 	}
 
-	if event.Time-collector.Reftime >= 100 {
-		collector.Channel <- collector.Event
-		collector.Reftime = 0
+	if event.Time-collector.reftime >= 100 {
+		collector.aggregateEventChannel <- collector.event
+		collector.reftime = 0
 	}
+
 }
