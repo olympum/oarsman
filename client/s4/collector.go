@@ -17,7 +17,7 @@ type Collector struct {
 	aggregateEventChannel chan AggregateEvent
 }
 
-func NewCollector(atomicEventChannel chan AtomicEvent, aggregateEventChannel chan AggregateEvent) Collector {
+func newCollector(atomicEventChannel chan AtomicEvent, aggregateEventChannel chan AggregateEvent) Collector {
 	return Collector{
 		atomicEventChannel:    atomicEventChannel,
 		aggregateEventChannel: aggregateEventChannel,
@@ -25,7 +25,7 @@ func NewCollector(atomicEventChannel chan AtomicEvent, aggregateEventChannel cha
 		event:                 AggregateEvent{}}
 }
 
-func (collector *Collector) Consume(event AtomicEvent) {
+func (collector *Collector) consume(event AtomicEvent) {
 	collector.atomicEventChannel <- event
 
 	if collector.aggregateEventChannel == nil {

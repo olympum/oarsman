@@ -113,7 +113,7 @@ func openPort() io.ReadWriteCloser {
 
 func NewS4(eventChannel chan AtomicEvent, aggregateEventChannel chan AggregateEvent, debug bool) S4Interface {
 	p := openPort()
-	collector := NewCollector(eventChannel, aggregateEventChannel)
+	collector := newCollector(eventChannel, aggregateEventChannel)
 	s4 := S4{port: p, scanner: bufio.NewScanner(p), collector: collector, debug: debug}
 	return &s4
 }
@@ -206,7 +206,7 @@ func (s4 *S4) readMemoryRequest(address string, size string) {
 }
 
 func (s4 *S4) oKHandler() {
-	s4.collector.Consume(AtomicEvent{
+	s4.collector.consume(AtomicEvent{
 		Time:  millis(),
 		Label: "okay",
 		Value: 0})
@@ -229,7 +229,7 @@ func (s4 *S4) pingHandler(b []byte) {
 				s4.write(e.Value.(Packet))
 			}
 		}
-		s4.collector.Consume(AtomicEvent{
+		s4.collector.consume(AtomicEvent{
 			Time:  millis(),
 			Label: "ping",
 			Value: 0})
@@ -240,7 +240,7 @@ func (s4 *S4) pingHandler(b []byte) {
 		// measurement
 		pulses := string(b[1:3])
 		value, _ := strconv.ParseUint(pulses, 16, 8)
-		s4.collector.Consume(AtomicEvent{
+		s4.collector.consume(AtomicEvent{
 			Time:  millis(),
 			Label: "pulses_per_25ms",
 			Value: value})
@@ -272,12 +272,12 @@ func (s4 *S4) strokeHandler(b []byte) {
 				s4.readMemoryRequest(address, mmap.size)
 			}
 		}
-		s4.collector.Consume(AtomicEvent{
+		s4.collector.consume(AtomicEvent{
 			Time:  millis(),
 			Label: "stroke_start",
 			Value: 1})
 	case 'E': // SE
-		s4.collector.Consume(AtomicEvent{
+		s4.collector.consume(AtomicEvent{
 			Time:  millis(),
 			Label: "stroke_end",
 			Value: 0})
@@ -323,7 +323,7 @@ func (s4 *S4) informationHandler(b []byte) {
 		}
 		v, err := strconv.ParseUint(string(b[6:(6+2*l)]), 16, 8*l)
 		if err == nil {
-			s4.collector.Consume(AtomicEvent{
+			s4.collector.consume(AtomicEvent{
 				Time:  millis(),
 				Label: g_memorymap[address].label,
 				Value: v})

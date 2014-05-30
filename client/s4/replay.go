@@ -23,7 +23,7 @@ func NewReplayS4(eventChannel chan AtomicEvent, aggregateEventChannel chan Aggre
 	}
 	log.Printf("Reading from %s", f.Name())
 	s := bufio.NewScanner(f)
-	collector := NewCollector(eventChannel, aggregateEventChannel)
+	collector := newCollector(eventChannel, aggregateEventChannel)
 	return &ReplayS4{scanner: s, collector: collector, replay: replay, debug: debug}
 }
 
@@ -39,7 +39,7 @@ func (s4 *ReplayS4) Run(workout S4Workout) {
 		if s4.debug {
 			log.Print(event)
 		}
-		s4.collector.Consume(event)
+		s4.collector.consume(event)
 		if s4.replay {
 			t.Sleep(t.Millisecond * 25)
 		}

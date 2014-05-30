@@ -22,11 +22,6 @@ type S4Options struct {
 	Debug                 bool
 }
 
-type S4Client struct {
-	s4      s4.S4Interface
-	workout s4.S4Workout
-}
-
 func aggregateEventWriter(aggregateEventChannel chan s4.AggregateEvent, csv string) {
 	var w io.Writer
 	f, err := os.Create(csv)
