@@ -111,7 +111,7 @@ func openPort() io.ReadWriteCloser {
 	return p
 }
 
-func NewS4(eventChannel chan AtomicEvent, aggregateEventChannel chan AggregateEvent, debug bool) S4Interface {
+func NewS4(eventChannel chan<- AtomicEvent, aggregateEventChannel chan<- AggregateEvent, debug bool) S4Interface {
 	p := openPort()
 	collector := newCollector(eventChannel, aggregateEventChannel)
 	s4 := S4{port: p, scanner: bufio.NewScanner(p), collector: collector, debug: debug}

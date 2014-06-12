@@ -13,11 +13,11 @@ type AggregateEvent struct {
 type Collector struct {
 	reftime               int64
 	event                 AggregateEvent
-	atomicEventChannel    chan AtomicEvent
-	aggregateEventChannel chan AggregateEvent
+	atomicEventChannel    chan<- AtomicEvent
+	aggregateEventChannel chan<- AggregateEvent
 }
 
-func newCollector(atomicEventChannel chan AtomicEvent, aggregateEventChannel chan AggregateEvent) Collector {
+func newCollector(atomicEventChannel chan<- AtomicEvent, aggregateEventChannel chan<- AggregateEvent) Collector {
 	return Collector{
 		atomicEventChannel:    atomicEventChannel,
 		aggregateEventChannel: aggregateEventChannel,

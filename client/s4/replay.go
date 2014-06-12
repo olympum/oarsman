@@ -16,7 +16,7 @@ type ReplayS4 struct {
 	debug     bool
 }
 
-func NewReplayS4(eventChannel chan AtomicEvent, aggregateEventChannel chan AggregateEvent, debug bool, replayfile string, replay bool) S4Interface {
+func NewReplayS4(eventChannel chan<- AtomicEvent, aggregateEventChannel chan<- AggregateEvent, debug bool, replayfile string, replay bool) S4Interface {
 	f, err := os.Open(replayfile)
 	if err != nil {
 		log.Fatalf("Could not read %s", replayfile)

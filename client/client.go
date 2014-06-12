@@ -22,7 +22,7 @@ type S4Options struct {
 	Debug                 bool
 }
 
-func aggregateEventWriter(aggregateEventChannel chan s4.AggregateEvent, csv string) {
+func aggregateEventWriter(aggregateEventChannel <-chan s4.AggregateEvent, csv string) {
 	var w io.Writer
 	f, err := os.Create(csv)
 	if err != nil {
@@ -45,7 +45,7 @@ func aggregateEventWriter(aggregateEventChannel chan s4.AggregateEvent, csv stri
 	}
 }
 
-func logger(ch chan s4.AtomicEvent, out string) {
+func logger(ch <-chan s4.AtomicEvent, out string) {
 	var writer *os.File
 	if out != "" {
 		f, err := os.Create(out)
