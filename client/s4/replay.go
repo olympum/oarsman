@@ -44,6 +44,7 @@ func (s4 *ReplayS4) Run(workout S4Workout) {
 			t.Sleep(t.Millisecond * 25)
 		}
 	}
+	s4.collector.consume(EndAtomicEvent)
 }
 
 func (s4 *ReplayS4) Exit() {

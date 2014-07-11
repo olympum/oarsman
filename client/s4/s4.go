@@ -3,10 +3,12 @@ package s4
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"github.com/huin/goserial"
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"syscall"
@@ -74,6 +76,28 @@ type AtomicEvent struct {
 	Time  int64
 	Label string
 	Value uint64
+}
+
+var EndAtomicEvent = AtomicEvent{}
+
+func Logger(ch <-chan AtomicEvent, out string) {
+	var writer *os.File
+	if out != "" {
+		f, err := os.Create(out)
+		if err != nil {
+			log.Fatal(err)
+		}
+		writer = f
+	} else {
+		writer = os.Stdout
+	}
+
+	log.Printf("Writing to %s", writer.Name())
+
+	for {
+		event := <-ch
+		fmt.Fprintf(writer, "%d %s:%d\n", event.Time, event.Label, event.Value)
+	}
 }
 
 type S4 struct {
@@ -161,6 +185,7 @@ func (s4 *S4) Exit() {
 	if s4.workout.state != WorkoutExited {
 		s4.write(Packet{cmd: ExitRequest})
 		s4.workout.state = WorkoutExited
+		s4.collector.consume(EndAtomicEvent)
 	}
 }
 
