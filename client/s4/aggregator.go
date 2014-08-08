@@ -61,7 +61,9 @@ func (aggregator *Aggregator) consume(event AtomicEvent) {
 	case "speed_cm_s":
 		aggregator.event.Speed_cm_s = v
 	case "heart_rate":
-		aggregator.event.Heart_rate = v
+		if v > 0 {
+			aggregator.event.Heart_rate = v
+		}
 	}
 
 	if event.Time-aggregator.reftime >= 100 {

@@ -42,7 +42,7 @@ func (collector *EventCollector) Run() {
 			}
 			if collector.averageHeartRateBpm == 0 {
 				collector.averageHeartRateBpm = event.Heart_rate
-			} else if event.Heart_rate != 0 {
+			} else {
 				collector.averageHeartRateBpm += event.Heart_rate
 			}
 			collector.events = append(collector.events, event)
