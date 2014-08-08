@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/olympum/gorower/client/s4"
-	"log"
 	"os"
 	"os/signal"
 	"time"
@@ -20,8 +20,7 @@ type S4Options struct {
 	Debug                 bool
 }
 
-func main() {
-	options := S4Options{}
+func ParseCLI(options S4Options) {
 	flag.Uint64Var(&options.Total_distance_meters, "distance", 0, "distance to row in meters")
 	flag.DurationVar(&options.Duration, "duration", 0, "duration to row (e.g. 1800s or 45m)")
 	flag.BoolVar(&options.Debug, "debug", false, "debug communication data packets")
@@ -32,12 +31,18 @@ func main() {
 	flag.BoolVar(&options.Replay, "replay", false, "replay input data in accurate time")
 
 	flag.Parse()
-	if !flag.Parsed() {
-		log.Fatal(flag.ErrHelp)
+	if !flag.Parsed() || len(os.Args) == 1 {
+		flag.Usage()
+		os.Exit(1)
 	}
+}
+
+func main() {
+	options := S4Options{}
+	ParseCLI(options)
 
 	// client mode
-	log.Println("CLI mode - Press CTRL+C to interrupt")
+	fmt.Println("CLI mode - Press CTRL+C to interrupt")
 
 	eventChannel := make(chan s4.AtomicEvent)
 	aggregateEventChannel := make(chan s4.AggregateEvent)
@@ -61,7 +66,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for sig := range c {
-			log.Printf("Terminating process (received %s signal)", sig.String())
+			fmt.Printf("Terminating process (received %s signal)", sig.String())
 			s.Exit()
 			os.Exit(0)
 		}
