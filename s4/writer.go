@@ -5,28 +5,23 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 )
 
 type WriterFunc func(collector *EventCollector, writer *bufio.Writer)
 
-func CSVWriter(collector *EventCollector, writer *bufio.Writer) {
-	fmt.Fprint(writer, "time,total_distance_meters,stroke_rate,watts,calories,speed_cm_s,heart_rate\n")
-	for _, event := range collector.events {
-		fmt.Fprintf(writer, "%d,%d,%d,%d,%d,%d,%d\n",
-			event.Time,
-			event.Total_distance_meters,
-			event.Stroke_rate,
-			event.Watts,
-			event.Calories,
-			event.Speed_cm_s,
-			event.Heart_rate)
-	}
-}
-
-func millisToZulu(millis int64) string {
-	return time.Unix(millis/1000, millis%1000*1000).UTC().Format(time.RFC3339)
-}
+// func CSVWriter(collector *EventCollector, writer *bufio.Writer) {
+// 	fmt.Fprint(writer, "time,total_distance_meters,stroke_rate,watts,calories,speed_cm_s,heart_rate\n")
+// 	for _, event := range collector.events {
+// 		fmt.Fprintf(writer, "%d,%d,%d,%d,%d,%d,%d\n",
+// 			event.Time,
+// 			event.Total_distance_meters,
+// 			event.Stroke_rate,
+// 			event.Watts,
+// 			event.Calories,
+// 			event.Speed_cm_s,
+// 			event.Heart_rate)
+// 	}
+// }
 
 func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
 	// header
@@ -35,17 +30,17 @@ func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
 	fmt.Fprintln(w, "<TrainingCenterDatabase xmlns=\"http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/ActivityExtension/v2 http://www.garmin.com/xmlschemas/ActivityExtensionv2.xsd http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd\">")
 	fmt.Fprintln(w, "<Activities>")
 	fmt.Fprintln(w, "<Activity Sport=\"Rowing\">")
-	fmt.Fprintf(w, "<Id>%s</Id>\n", millisToZulu(collector.start))
-	fmt.Fprintf(w, "<Lap StartTime=\"%s\">\n", millisToZulu(collector.start))
-	fmt.Fprintf(w, "<TotalTimeSeconds>%d</TotalTimeSeconds>\n", collector.totalTimeSeconds/1000)
-	fmt.Fprintf(w, "<DistanceMeters>%d</DistanceMeters>\n", collector.distanceMeters)
-	fmt.Fprintf(w, "<MaximumSpeed>%f</MaximumSpeed>\n", float64(collector.maximumSpeed)/100.0)
-	fmt.Fprintf(w, "<Calories>%d</Calories>\n", collector.calories/1000)
+	fmt.Fprintf(w, "<Id>%s</Id>\n", millisToZulu(collector.Activity.StartTimeMilliseconds))
+	fmt.Fprintf(w, "<Lap StartTime=\"%s\">\n", millisToZulu(collector.Activity.StartTimeMilliseconds))
+	fmt.Fprintf(w, "<TotalTimeSeconds>%d</TotalTimeSeconds>\n", collector.Activity.TotalTimeSeconds())
+	fmt.Fprintf(w, "<DistanceMeters>%d</DistanceMeters>\n", collector.Activity.DistanceMeters)
+	fmt.Fprintf(w, "<MaximumSpeed>%f</MaximumSpeed>\n", collector.Activity.MaximumSpeed())
+	fmt.Fprintf(w, "<Calories>%d</Calories>\n", collector.Activity.KCalories())
 	fmt.Fprintln(w, "<AverageHeartRateBpm>")
-	fmt.Fprintf(w, "<Value>%d</Value>\n", collector.averageHeartRateBpm/collector.nSamples)
+	fmt.Fprintf(w, "<Value>%d</Value>\n", collector.Activity.AverageHeartRateBpm)
 	fmt.Fprintln(w, "</AverageHeartRateBpm>")
 	fmt.Fprintln(w, "<MaximumHeartRateBpm>")
-	fmt.Fprintf(w, "<Value>%d</Value>\n", collector.maximumHeartRateBpm)
+	fmt.Fprintf(w, "<Value>%d</Value>\n", collector.Activity.MaximumHeartRateBpm)
 	fmt.Fprintln(w, "</MaximumHeartRateBpm>")
 	fmt.Fprintln(w, "<Intensity>Active</Intensity>")
 	fmt.Fprintln(w, "<TriggerMethod>Manual</TriggerMethod>")

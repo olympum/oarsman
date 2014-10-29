@@ -2,7 +2,7 @@ package s4
 
 import (
 	"bufio"
-	"log"
+	jww "github.com/spf13/jwalterweatherman"
 	"os"
 	"strconv"
 	"strings"
@@ -16,28 +16,35 @@ type ReplayS4 struct {
 	debug      bool
 }
 
-func NewReplayS4(eventChannel chan<- AtomicEvent, aggregateEventChannel chan<- AggregateEvent, debug bool, replayfile string, replay bool) S4Interface {
+func NewReplayS4(eventChannel chan<- AtomicEvent, aggregateEventChannel chan<- AggregateEvent, debug bool, replayfile string, replay bool) (S4Interface, error) {
 	f, err := os.Open(replayfile)
 	if err != nil {
-		log.Fatalf("Could not read %s", replayfile)
+		jww.FATAL.Printf("Could not read %s\n", replayfile)
+		return nil, err
 	}
-	log.Printf("Reading from %s", f.Name())
+	jww.INFO.Printf("Reading from %s\n", f.Name())
 	s := bufio.NewScanner(f)
 	aggregator := newAggregator(eventChannel, aggregateEventChannel)
-	return &ReplayS4{scanner: s, aggregator: aggregator, replay: replay, debug: debug}
+	return &ReplayS4{scanner: s, aggregator: aggregator, replay: replay, debug: debug}, nil
 }
 
-func (s4 *ReplayS4) Run(workout S4Workout) {
+func (s4 *ReplayS4) Run(workout *S4Workout) {
 	for s4.scanner.Scan() {
 		line := s4.scanner.Text()
 		tokens := strings.Split(line, " ")
+		if len(tokens) < 2 {
+			continue
+		}
 		time, _ := strconv.ParseInt(tokens[0], 10, 64)
 		values := strings.Split(tokens[1], ":")
+		if len(values) < 2 {
+			continue
+		}
 		label := values[0]
 		value, _ := strconv.ParseUint(values[1], 10, 64)
 		event := AtomicEvent{Time: time, Label: label, Value: value}
 		if s4.debug {
-			log.Print(event)
+			jww.DEBUG.Println(event)
 		}
 		s4.aggregator.consume(event)
 		if s4.replay {

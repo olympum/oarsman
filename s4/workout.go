@@ -3,7 +3,7 @@ package s4
 import (
 	"container/list"
 	"fmt"
-	"log"
+	jww "github.com/spf13/jwalterweatherman"
 	"time"
 )
 
@@ -23,21 +23,21 @@ func (workout S4Workout) AddSingleWorkout(duration time.Duration, distanceMeters
 	var workoutPacket Packet
 
 	if durationSeconds > 0 {
-		log.Printf("Starting single duration workout: %d seconds", durationSeconds)
+		jww.INFO.Printf("Starting single duration workout: %d seconds\n", durationSeconds)
 		if durationSeconds >= 18000 {
-			log.Fatalf("Workout time must be less than 18,000 seconds (was %d)", durationSeconds)
+			jww.FATAL.Printf("Workout time must be less than 18,000 seconds (was %d)\n", durationSeconds)
 		}
 		payload := fmt.Sprintf("%04X", durationSeconds)
 		workoutPacket = Packet{cmd: WorkoutSetDurationRequest, data: []byte(payload)}
 	} else if distanceMeters > 0 {
-		log.Printf("Starting single distance workout: %d meters", distanceMeters)
+		jww.INFO.Printf("Starting single distance workout: %d meters\n", distanceMeters)
 		if distanceMeters >= 64000 {
-			log.Fatalf("Workout distance must be less than 64,000 meters (was %d)", distanceMeters)
+			jww.FATAL.Printf("Workout distance must be less than 64,000 meters (was %d)\n", distanceMeters)
 		}
 		payload := Meters + fmt.Sprintf("%04X", distanceMeters)
 		workoutPacket = Packet{cmd: WorkoutSetDistanceRequest, data: []byte(payload)}
 	} else {
-		log.Fatal("Undefined workout")
+		jww.FATAL.Println("Undefined workout")
 	}
 	workout.workoutPackets.PushFront(workoutPacket)
 }

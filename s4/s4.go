@@ -3,11 +3,10 @@ package s4
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"github.com/huin/goserial"
+	jww "github.com/spf13/jwalterweatherman"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -40,7 +39,7 @@ const (
 )
 
 type S4Interface interface {
-	Run(workout S4Workout)
+	Run(workout *S4Workout)
 	Exit()
 }
 
@@ -80,30 +79,10 @@ type AtomicEvent struct {
 
 var EndAtomicEvent = AtomicEvent{}
 
-func Logger(ch <-chan AtomicEvent, out string) {
-	var writer *os.File
-	if out != "" {
-		f, err := os.Create(out)
-		if err != nil {
-			log.Fatal(err)
-		}
-		writer = f
-	} else {
-		writer = os.Stdout
-	}
-
-	log.Printf("Writing to %s", writer.Name())
-
-	for {
-		event := <-ch
-		fmt.Fprintf(writer, "%d %s:%d\n", event.Time, event.Label, event.Value)
-	}
-}
-
 type S4 struct {
 	port       io.ReadWriteCloser
 	scanner    *bufio.Scanner
-	workout    S4Workout
+	workout    *S4Workout
 	aggregator Aggregator
 	debug      bool
 }
@@ -123,13 +102,15 @@ func findUsbSerialModem() string {
 func openPort() io.ReadWriteCloser {
 	name := findUsbSerialModem()
 	if len(name) == 0 {
-		log.Fatal("S4 USB serial modem port not found")
+		jww.FATAL.Println("S4 USB serial modem port not found")
+		os.Exit(-1)
 	}
 
 	c := &goserial.Config{Name: name, Baud: 115200, CRLFTranslate: true}
 	p, err := goserial.OpenPort(c)
 	if err != nil {
-		log.Fatal(err)
+		jww.FATAL.Println(err)
+		os.Exit(-1)
 	}
 
 	return p
@@ -145,10 +126,11 @@ func NewS4(eventChannel chan<- AtomicEvent, aggregateEventChannel chan<- Aggrega
 func (s4 *S4) write(p Packet) {
 	n, err := s4.port.Write(p.Bytes())
 	if err != nil {
-		log.Fatal(err)
+		jww.FATAL.Println(err)
+		os.Exit(-1)
 	}
 	if s4.debug {
-		log.Printf("written %s (%d+1 bytes)", strings.TrimRight(string(p.Bytes()), "\n"), n-1)
+		jww.DEBUG.Printf("written %s (%d+1 bytes)", strings.TrimRight(string(p.Bytes()), "\n"), n-1)
 	}
 	time.Sleep(25 * time.Millisecond) // yield per spec
 }
@@ -158,7 +140,7 @@ func (s4 *S4) read() {
 		b := s4.scanner.Bytes()
 		if len(b) > 0 {
 			if s4.debug {
-				log.Printf("read %s (%d+1 bytes)", string(b), len(b))
+				jww.DEBUG.Printf("read %s (%d+1 bytes)", string(b), len(b))
 			}
 			s4.onPacketReceived(b)
 			if s4.workout.state == WorkoutCompleted || s4.workout.state == WorkoutExited {
@@ -168,11 +150,12 @@ func (s4 *S4) read() {
 	}
 
 	if err := s4.scanner.Err(); err != nil {
-		log.Fatal(err)
+		jww.FATAL.Println(err)
+		os.Exit(-1)
 	}
 }
 
-func (s4 *S4) Run(workout S4Workout) {
+func (s4 *S4) Run(workout *S4Workout) {
 	// send connection command and start listening
 	s4.workout = workout
 	s4.workout.state = Unset
@@ -211,7 +194,7 @@ func (s4 *S4) onPacketReceived(b []byte) {
 	case 'S':
 		s4.strokeHandler(b)
 	default:
-		log.Printf("Unrecognized packet: %s", string(b))
+		jww.INFO.Printf("Unrecognized packet: %s", string(b))
 	}
 }
 
@@ -220,7 +203,7 @@ func (s4 *S4) wRHandler(b []byte) {
 	if s == "_WR_" {
 		s4.write(Packet{cmd: ModelInformationRequest})
 	} else {
-		log.Fatalf("Unknown WaterRower init command %s", s)
+		jww.INFO.Printf("Unknown WaterRower init command %s\n", s)
 	}
 }
 
@@ -315,18 +298,18 @@ func (s4 *S4) informationHandler(b []byte) {
 	case 'V': // version
 		// e.g. IV40210
 		msg := string(b)
-		log.Printf("WaterRower S%s %s.%s", msg[2:3], msg[3:5], msg[5:7])
+		jww.INFO.Printf("WaterRower S%s %s.%s\n", msg[2:3], msg[3:5], msg[5:7])
 		model, _ := strconv.ParseInt(msg[2:3], 0, 0)  // 4
 		fwHigh, _ := strconv.ParseInt(msg[3:5], 0, 0) // 2
 		fwLow, _ := strconv.ParseInt(msg[5:7], 0, 0)  // 10
 		if model != 4 {
-			log.Fatal("not an S4 monitor")
+			jww.INFO.Println("not an S4 monitor")
 		}
 		if fwHigh != 2 {
-			log.Fatal("unsupported major S4 firmware version")
+			jww.INFO.Println("unsupported major S4 firmware version")
 		}
 		if fwLow != 10 {
-			log.Fatal("unsupported minor S4 firmware version")
+			jww.INFO.Println("unsupported minor S4 firmware version")
 		}
 
 		// we are ready to start workout
@@ -357,7 +340,7 @@ func (s4 *S4) informationHandler(b []byte) {
 				s4.readMemoryRequest(address, string(size))
 			}
 		} else {
-			log.Println("error parsing int: ", err)
+			jww.INFO.Println("error parsing int: ", err)
 		}
 	}
 }
