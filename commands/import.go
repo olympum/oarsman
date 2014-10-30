@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"github.com/olympum/oarsman/db"
 	"github.com/olympum/oarsman/s4"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
@@ -54,7 +53,7 @@ as RAW (40Hz JSON formatted feed).`,
 		}
 		defer database.Close()
 
-		db.InsertActivity(database, activity) // move file to workout folder
+		database.InsertActivity(activity) // move file to workout folder
 
 		workoutFile := viper.GetString("WorkoutFolder") + string(os.PathSeparator) + strconv.FormatInt(activity.StartTimeMilliseconds, 10) + ".log"
 		os.Rename(fqOfn, workoutFile)

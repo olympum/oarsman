@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"github.com/olympum/oarsman/db"
 	"github.com/olympum/oarsman/s4"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -30,7 +29,7 @@ before export.`,
 		defer database.Close()
 
 		if activityId == 0 {
-			activities := db.ListActivities(database)
+			activities := database.ListActivities()
 			fmt.Println("id,start_time,distance,ave_speed,max_speed")
 			for _, activity := range activities {
 				fmt.Printf("%d,%s,%d,%f,%f\n",
@@ -43,7 +42,7 @@ before export.`,
 			return
 		}
 
-		activity := db.FindActivityById(database, activityId)
+		activity := database.FindActivityById(activityId)
 		eventChannel := make(chan s4.AtomicEvent)
 		aggregateEventChannel := make(chan s4.AggregateEvent)
 		collector := s4.NewEventCollector(aggregateEventChannel)

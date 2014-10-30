@@ -80,8 +80,16 @@ CREATE TABLE activity (
 
 `
 
-func CreateTables(db *sql.DB) error {
-	_, err := db.Exec(createTableString)
+type OarsmanDB struct {
+	odb *sql.DB
+}
+
+func (db *OarsmanDB) Close() error {
+	return db.odb.Close()
+}
+
+func (db *OarsmanDB) CreateTables() error {
+	_, err := db.odb.Exec(createTableString)
 	if err != nil {
 		jww.ERROR.Printf("%q: %s\n", err, createTableString)
 		return nil
@@ -92,18 +100,18 @@ func CreateTables(db *sql.DB) error {
 	return nil
 }
 
-func InitializeDatabase(db *sql.DB) error {
-	defer db.Close()
+func (db *OarsmanDB) InitializeDatabase() error {
+	defer db.odb.Close()
 
-	e := CreateTables(db)
+	e := db.CreateTables()
 	if e != nil {
 		return e
 	}
 	return nil
 }
 
-func ListActivities(db *sql.DB) []s4.Activity {
-	rows, err := db.Query(queryString)
+func (db *OarsmanDB) ListActivities() []s4.Activity {
+	rows, err := db.odb.Query(queryString)
 	if err != nil {
 		jww.ERROR.Println(err)
 		var empty []s4.Activity
@@ -112,8 +120,8 @@ func ListActivities(db *sql.DB) []s4.Activity {
 	return parseActivities(rows)
 }
 
-func FindActivityById(db *sql.DB, id int64) *s4.Activity {
-	rows, err := db.Query(selectString, id)
+func (db *OarsmanDB) FindActivityById(id int64) *s4.Activity {
+	rows, err := db.odb.Query(selectString, id)
 	if err != nil {
 		jww.ERROR.Println(err)
 		return nil
@@ -170,15 +178,15 @@ func parseActivities(rows *sql.Rows) []s4.Activity {
 	return activities
 }
 
-func InsertActivity(db *sql.DB, activity *s4.Activity) {
+func (db *OarsmanDB) InsertActivity(activity *s4.Activity) {
 
-	if FindActivityById(db, activity.StartTimeMilliseconds) != nil {
+	if db.FindActivityById(activity.StartTimeMilliseconds) != nil {
 		jww.ERROR.Printf("Activity already exists in database, ignoring %d\n", activity.StartTimeMilliseconds)
 		return
 	}
 
 	jww.INFO.Println(activity)
-	result, err := db.Exec(insertString,
+	result, err := db.odb.Exec(insertString,
 		activity.StartTimeMilliseconds,
 		activity.TotalTimeMilliseconds,
 		activity.DistanceMeters,
@@ -196,7 +204,7 @@ func InsertActivity(db *sql.DB, activity *s4.Activity) {
 	}
 	jww.INFO.Print(result)
 
-	rows, _ := db.Query(queryString)
+	rows, _ := db.odb.Query(queryString)
 	for rows.Next() {
 		var start_time int
 		rows.Scan(&start_time)

@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"database/sql"
 	"github.com/olympum/oarsman/db"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -23,11 +22,11 @@ will be upgraded to the latest schema, no data will be destroyed`,
 
 		defer database.Close()
 
-		db.InitializeDatabase(database)
+		database.InitializeDatabase()
 	},
 }
 
-func WorkoutDatabase() (*sql.DB, error) {
+func WorkoutDatabase() (*db.OarsmanDB, error) {
 	workingFolder := viper.GetString("DbFolder")
 	database, e := db.OpenDatabase(workingFolder)
 	return database, e
