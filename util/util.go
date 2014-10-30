@@ -28,3 +28,7 @@ func EnsureFolderExists(path string) error {
 func MillisToZulu(millis int64) string {
 	return time.Unix(millis/1000, millis%1000*1000).UTC().Format(time.RFC3339)
 }
+
+func MillisToZuluNano(millis int64) string {
+	return time.Unix(millis/1000, millis%1000*1000).UTC().Format(time.RFC3339Nano)
+}

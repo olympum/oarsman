@@ -30,7 +30,7 @@ func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
 	fmt.Fprintln(w, "<?xml version=\"1.0\"?>")
 	fmt.Fprintln(w, "<TrainingCenterDatabase xmlns=\"http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/ActivityExtension/v2 http://www.garmin.com/xmlschemas/ActivityExtensionv2.xsd http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd\">")
 	fmt.Fprintln(w, "<Activities>")
-	fmt.Fprintln(w, "<Activity Sport=\"Rowing\">")
+	fmt.Fprintln(w, "<Activity Sport=\"Other\">")
 	fmt.Fprintf(w, "<Id>%s</Id>\n", util.MillisToZulu(collector.Activity.StartTimeMilliseconds))
 	fmt.Fprintf(w, "<Lap StartTime=\"%s\">\n", util.MillisToZulu(collector.Activity.StartTimeMilliseconds))
 	fmt.Fprintf(w, "<TotalTimeSeconds>%d</TotalTimeSeconds>\n", collector.Activity.TotalTimeSeconds())
@@ -49,7 +49,7 @@ func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
 
 	for _, e := range collector.events {
 		fmt.Fprintln(w, "<Trackpoint>")
-		fmt.Fprintf(w, "<Time>%s</Time>\n", util.MillisToZulu(e.Time))
+		fmt.Fprintf(w, "<Time>%s</Time>\n", util.MillisToZuluNano(e.Time))
 		fmt.Fprintf(w, "<DistanceMeters>%d</DistanceMeters>\n", e.Total_distance_meters)
 		fmt.Fprintln(w, "<HeartRateBpm xsi:type=\"HeartRateInBeatsPerMinute_t\">")
 		fmt.Fprintf(w, "<Value>%d</Value>\n", e.Heart_rate)
