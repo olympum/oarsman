@@ -2,12 +2,12 @@ package commands
 
 import (
 	"github.com/olympum/oarsman/s4"
+	"github.com/olympum/oarsman/util"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/viper"
 	"os"
 	"os/signal"
-	"strconv"
 	"time"
 )
 
@@ -29,7 +29,7 @@ the database (use the import command to save it in the database).`,
 		collector := s4.NewEventCollector(aggregateEventChannel)
 		go collector.Run()
 
-		stamp := time.Now().Format(time.RFC3339)
+		stamp := util.MillisToZulu(time.Now().UTC().Unix())
 		tempFile := viper.GetString("TempFolder") + string(os.PathSeparator) + stamp + ".log"
 		go s4.Logger(eventChannel, tempFile)
 		workout := s4.NewS4Workout()

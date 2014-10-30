@@ -3,10 +3,10 @@ package commands
 import (
 	"fmt"
 	"github.com/olympum/oarsman/s4"
+	"github.com/olympum/oarsman/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
-	"strconv"
 )
 
 var activityId int64
@@ -48,14 +48,14 @@ before export.`,
 		collector := s4.NewEventCollector(aggregateEventChannel)
 		go collector.Run()
 
-		fileName := strconv.FormatInt(activity.StartTimeMilliseconds, 10)
+		fileName := util.MillisToZulu(activity.StartTimeMilliseconds)
 		inputFile := viper.GetString("WorkoutFolder") + string(os.PathSeparator) + fileName + ".log"
 		s, err := s4.NewReplayS4(eventChannel, aggregateEventChannel, false, inputFile, false)
 		if err != nil {
 			// TODO
 			return
 		}
-		fqOfn := viper.GetString("TempFolder") + string(os.PathSeparator) + fileName + ".log"
+		fqOfn := viper.GetString("TempFolder") + string(os.PathSeparator) + randomId() + ".log"
 		go s4.Logger(eventChannel, fqOfn)
 
 		s.Run(nil)

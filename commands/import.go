@@ -1,12 +1,15 @@
 package commands
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"github.com/olympum/oarsman/s4"
+	"github.com/olympum/oarsman/util"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/viper"
 	"os"
-	"strconv"
+	"time"
 )
 
 var replay bool
@@ -38,7 +41,7 @@ as RAW (40Hz JSON formatted feed).`,
 			return
 		}
 
-		fqOfn := viper.GetString("TempFolder") + string(os.PathSeparator) + inputFile
+		fqOfn := viper.GetString("TempFolder") + string(os.PathSeparator) + randomId()
 		go s4.Logger(eventChannel, fqOfn)
 
 		s.Run(nil)
@@ -55,7 +58,7 @@ as RAW (40Hz JSON formatted feed).`,
 
 		database.InsertActivity(activity) // move file to workout folder
 
-		workoutFile := viper.GetString("WorkoutFolder") + string(os.PathSeparator) + strconv.FormatInt(activity.StartTimeMilliseconds, 10) + ".log"
+		workoutFile := viper.GetString("WorkoutFolder") + string(os.PathSeparator) + util.MillisToZulu(activity.StartTimeMilliseconds) + ".log"
 		os.Rename(fqOfn, workoutFile)
 	},
 }
@@ -63,4 +66,17 @@ as RAW (40Hz JSON formatted feed).`,
 func init() {
 	importCmd.Flags().BoolVar(&replay, "replay", false, "print to stdout using precise time the original recorded the raw data packets")
 	importCmd.Flags().StringVar(&inputFile, "input", "", "input file to import")
+}
+
+func randomId() string {
+	size := 32
+	rb := make([]byte, size)
+	_, err := rand.Read(rb)
+
+	if err != nil {
+		jww.ERROR.Println(err)
+		return string(time.Now().Nanosecond())
+	}
+
+	return base64.URLEncoding.EncodeToString(rb)
 }

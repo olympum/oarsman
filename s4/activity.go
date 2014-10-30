@@ -1,7 +1,7 @@
 package s4
 
 import (
-	"time"
+	"github.com/olympum/oarsman/util"
 )
 
 type Activity struct {
@@ -19,16 +19,12 @@ type Activity struct {
 	MaximumPower          uint64
 }
 
-func millisToZulu(millis int64) string {
-	return time.Unix(millis/1000, millis%1000*1000).UTC().Format(time.RFC3339)
-}
-
 func (activity Activity) StartTimeSeconds() int64 {
 	return activity.StartTimeMilliseconds / 1000
 }
 
 func (activity Activity) StartTimeZulu() string {
-	return millisToZulu(activity.StartTimeMilliseconds)
+	return util.MillisToZulu(activity.StartTimeMilliseconds)
 }
 
 func (Activity Activity) TotalTimeSeconds() int64 {

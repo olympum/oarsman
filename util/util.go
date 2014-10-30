@@ -3,6 +3,7 @@ package util
 import (
 	jww "github.com/spf13/jwalterweatherman"
 	"os"
+	"time"
 )
 
 func EnsureFolderExists(path string) error {
@@ -22,4 +23,8 @@ func EnsureFolderExists(path string) error {
 		return err
 	}
 	return nil
+}
+
+func MillisToZulu(millis int64) string {
+	return time.Unix(millis/1000, millis%1000*1000).UTC().Format(time.RFC3339)
 }
