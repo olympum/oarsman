@@ -29,7 +29,7 @@ the database (use the import command to save it in the database).`,
 		collector := s4.NewEventCollector(aggregateEventChannel)
 		go collector.Run()
 
-		stamp := util.MillisToZulu(time.Now().UTC().Unix())
+		stamp := util.MillisToZulu(time.Now().UnixNano() / 1000000)
 		tempFile := viper.GetString("TempFolder") + string(os.PathSeparator) + stamp + ".log"
 		go s4.Logger(eventChannel, tempFile)
 		workout := s4.NewS4Workout()

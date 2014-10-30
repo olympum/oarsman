@@ -185,7 +185,7 @@ func (db *OarsmanDB) InsertActivity(activity *s4.Activity) {
 		return
 	}
 
-	jww.INFO.Println(activity)
+	jww.DEBUG.Println(activity)
 	result, err := db.odb.Exec(insertString,
 		activity.StartTimeMilliseconds,
 		activity.TotalTimeMilliseconds,
@@ -202,12 +202,6 @@ func (db *OarsmanDB) InsertActivity(activity *s4.Activity) {
 	if err != nil {
 		jww.ERROR.Print(err)
 	}
-	jww.INFO.Print(result)
+	jww.DEBUG.Print(result)
 
-	rows, _ := db.odb.Query(queryString)
-	for rows.Next() {
-		var start_time int
-		rows.Scan(&start_time)
-		jww.INFO.Print(start_time)
-	}
 }

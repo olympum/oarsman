@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/olympum/oarsman/util"
-	"log"
+	jww "github.com/spf13/jwalterweatherman"
 	"os"
 )
 
@@ -76,12 +76,12 @@ func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
 func ExportCollectorEvents(collector *EventCollector, filename string, writerFunc WriterFunc) {
 	f, err := os.Create(filename)
 	if err != nil {
-		log.Fatalf("Could not create %s", filename)
+		jww.FATAL.Printf("Could not create %s\n", filename)
 	}
 	defer f.Close()
 
 	var w *bufio.Writer
 	w = bufio.NewWriter(f)
-	log.Printf("Writing aggregate data to %s", f.Name())
+	jww.INFO.Printf("Writing aggregate data to %s\n", f.Name())
 	writerFunc(collector, w)
 }
