@@ -23,44 +23,53 @@ Imports one or multiple workouts into the database
 as RAW (40Hz JSON formatted feed).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		InitializeConfig()
-
-		if inputFile == "" {
-			jww.ERROR.Println("Nothing to import")
-			return
-		}
-		// Parse input file path to construct the fully qualified file name
-		// Write output file using a UUID as file name
-		eventChannel := make(chan s4.AtomicEvent)
-		aggregateEventChannel := make(chan s4.AggregateEvent)
-		collector := s4.NewEventCollector(aggregateEventChannel)
-		go collector.Run()
-
-		s, err := s4.NewReplayS4(eventChannel, aggregateEventChannel, replay, inputFile, replay)
-		if err != nil {
-			// TODO
-			return
-		}
-
-		fqOfn := viper.GetString("TempFolder") + string(os.PathSeparator) + randomId()
-		go s4.Logger(eventChannel, fqOfn)
-
-		s.Run(nil)
-
-		activity := collector.Activity
-		jww.INFO.Printf("Parsed activity with start time %d\n", activity.StartTimeMilliseconds)
-
-		database, error := WorkoutDatabase()
-		if error != nil {
-			// TODO
-			return
-		}
-		defer database.Close()
-
-		database.InsertActivity(activity) // move file to workout folder
-
-		workoutFile := viper.GetString("WorkoutFolder") + string(os.PathSeparator) + util.MillisToZulu(activity.StartTimeMilliseconds) + ".log"
-		os.Rename(fqOfn, workoutFile)
+		importActivity(inputFile, replay)
 	},
+}
+
+func importActivity(inputFile string, replay bool) *s4.Activity {
+
+	if inputFile == "" {
+		jww.ERROR.Println("Nothing to import")
+		return nil
+	}
+	jww.INFO.Printf("Importing activity from %s\n", inputFile)
+
+	// Parse input file path to construct the fully qualified file name
+	// Write output file using a UUID as file name
+	eventChannel := make(chan s4.AtomicEvent)
+	aggregateEventChannel := make(chan s4.AggregateEvent)
+	collector := s4.NewEventCollector(aggregateEventChannel)
+	go collector.Run()
+
+	s, err := s4.NewReplayS4(eventChannel, aggregateEventChannel, replay, inputFile, replay)
+	if err != nil {
+		// TODO
+		return nil
+	}
+
+	fqOfn := viper.GetString("TempFolder") + string(os.PathSeparator) + randomId()
+	go s4.Logger(eventChannel, fqOfn)
+
+	s.Run(nil)
+
+	activity := collector.Activity
+	jww.INFO.Printf("Parsed activity with start time %d\n", activity.StartTimeMilliseconds)
+
+	database, error := WorkoutDatabase()
+	if error != nil {
+		// TODO
+		return nil
+	}
+	defer database.Close()
+
+	database.InsertActivity(activity) // move file to workout folder
+	jww.INFO.Printf("Activity %d saved to database\n", activity.StartTimeMilliseconds)
+
+	workoutFile := viper.GetString("WorkoutFolder") + string(os.PathSeparator) + util.MillisToZulu(activity.StartTimeMilliseconds) + ".log"
+	os.Rename(fqOfn, workoutFile)
+	jww.INFO.Printf("Activity log saved in %s\n", workoutFile)
+	return activity
 }
 
 func init() {

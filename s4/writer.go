@@ -38,7 +38,7 @@ func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
 	fmt.Fprintf(w, "<MaximumSpeed>%f</MaximumSpeed>\n", collector.Activity.MaximumSpeed())
 	fmt.Fprintf(w, "<Calories>%d</Calories>\n", collector.Activity.KCalories())
 	fmt.Fprintln(w, "<AverageHeartRateBpm>")
-	fmt.Fprintf(w, "<Value>%d</Value>\n", collector.Activity.AverageHeartRateBpm)
+	fmt.Fprintf(w, "<Value>%d</Value>\n", int(collector.Activity.AverageHeartRateBpm))
 	fmt.Fprintln(w, "</AverageHeartRateBpm>")
 	fmt.Fprintln(w, "<MaximumHeartRateBpm>")
 	fmt.Fprintf(w, "<Value>%d</Value>\n", collector.Activity.MaximumHeartRateBpm)

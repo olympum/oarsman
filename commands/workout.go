@@ -47,8 +47,21 @@ the database (use the import command to save it in the database).`,
 			}
 		}()
 
-		s.Run(&workout)
+		go s.Run(&workout)
 
+		jww.INFO.Println(">>> Press RETURN to end workout ... <<<")
+		var buffer [1]byte
+		os.Stdin.Read(buffer[:])
+
+		s.Exit()
+
+		jww.INFO.Println("Workout completed successfully")
+
+		activity := importActivity(tempFile, false)
+
+		if activity != nil {
+			exportActivity(activity.StartTimeMilliseconds)
+		}
 	},
 }
 

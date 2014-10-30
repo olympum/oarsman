@@ -6,4 +6,3 @@
 * Export TCX at 1Hz
 * Hide db init
 * Allow listing and removing activities
-
