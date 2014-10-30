@@ -20,8 +20,8 @@ var workoutCmd = &cobra.Command{
 	Short: "Start a rowing workout",
 	Long: `
 Send workout instructions to rowing monitor and start collecting
-rowing event data till workout is completed. Data is saved in the
-database.`,
+rowing event data till workout is completed. Data is not saved in
+the database (use the import command to save it in the database).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		InitializeConfig()
 		eventChannel := make(chan s4.AtomicEvent)
@@ -43,19 +43,6 @@ database.`,
 			for sig := range ch {
 				jww.INFO.Printf("Terminating workout (received %s signal)\n", sig.String())
 				s.Exit()
-
-				database, error := WorkoutDatabase()
-				if error != nil {
-					// TODO
-				}
-				defer database.Close()
-
-				activity := collector.Activity
-				database.InsertActivity(activity) // move file to workout folder
-
-				workoutFile := viper.GetString("WorkoutFolder") + string(os.PathSeparator) + strconv.FormatInt(activity.StartTimeMilliseconds, 10) + ".log"
-				os.Rename(tempFile, workoutFile)
-
 				os.Exit(0)
 			}
 		}()
