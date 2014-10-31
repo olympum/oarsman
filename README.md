@@ -11,7 +11,6 @@ and Windows on Prolific's site.
 The available commands are:
 
     version                   Print the version number
-    init                      Initialize the database
     workout                   Start a rowing workout
     export                    Export workout data from database
     import                    Import workout data from database
@@ -19,20 +18,46 @@ The available commands are:
  
 The program uses a SQLite3 database to store metadata about the
 workout activities. The database file and all raw workout logs are
-stored under the folder `.oarsman` in the user's home directory. In
-order to initialize the database for the first-time, type:
+stored under the folder `.oarsman` in the user's home directory. The
+database is created automatically if it does not exist the first time
+the program is run.
 
-    $ oarsman init
-
-Do a short 200m test workout:
+To do a short 200m test workout:
 
     $ oarsman workout --distance=200
 
-... now ... get rowing. Once done, come back to your computer and
-CTRL+C (unfortunately that's the best I can do right now).
+... now ... get rowing. Once done, come back to your computer and hit
+RETURN (unfortunately that's the best I can do right now). The program
+will save a log file with the raw activity event data, insert the
+activity into the database, and export a TCX file. This is an example
+of a full session:
 
-You can now export as TCX (Garmin Training Center). To find out the
-workout activity id, list all available workouts using the `export`
+    $ oarsman workout --duration=90m
+    INFO: 2014/10/31 Using configuration defaults
+    INFO: 2014/10/31 Working folder: /Users/brunofr/.oarsman
+    INFO: 2014/10/31 Db folder: /Users/brunofr/.oarsman/db
+    INFO: 2014/10/31 Workout folder: /Users/brunofr/.oarsman/workouts
+    INFO: 2014/10/31 Temp folder: /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman
+    INFO: 2014/10/31 Starting single duration workout: 5400 seconds
+    INFO: 2014/10/31 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-10-31T08:30:18Z.log
+    INFO: 2014/10/31 >>> Press RETURN to end workout ... <<<
+    INFO: 2014/10/31 WaterRower S4 02.10
+
+    INFO: 2014/10/31 Workout completed successfully
+    INFO: 2014/10/31 Importing activity from /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-10-31T08:30:18Z.log
+    INFO: 2014/10/31 Reading from /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-10-31T08:30:18Z.log
+    INFO: 2014/10/31 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/_m9Qlix_R8uN3zDNpkhW2RIs9OBEg548FwwjZA9vJ54=
+    INFO: 2014/10/31 Parsed activity with start time 1414744219400
+    INFO: 2014/10/31 Activity 1414744219400 saved to database
+    INFO: 2014/10/31 Activity log saved in /Users/brunofr/.oarsman/workouts/2014-10-31T08:30:19Z.log
+    INFO: 2014/10/31 Reading from /Users/brunofr/.oarsman/workouts/2014-10-31T08:30:19Z.log
+    INFO: 2014/10/31 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/HU2iF3wiDQzJvC2XkKXr2FCMa6je_unsNOR0Zhpnfmk=.log
+    INFO: 2014/10/31 Writing aggregate data to
+    /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-10-31T08:30:19Z.tcx
+
+If you did not save the TCX file, you can always export individual
+activities as TCX (Garmin Training Center). To find out the workout
+activity id, first list all available workouts using the `export`
 command without and `id`:
 
     $ oarsman export
@@ -46,11 +71,8 @@ therefore we type:
     $ oarsman export --id=1414596607600
     2014/10/29 17:29:40 Writing aggregate data to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/1414596607600.tcx
 
-You'll find the tcx file in that folder.
-
-Note that the program captures rowing data (distance, stroke rate,
-heart rate, etc.) every 25 ms, but the export is every 100ms. In fact,
-although we create track points in the TCX file every 100ms, the
-resolution in the official schema is 1,000ms, so depending on the
-program you use data might be truncated, averaged, ... In general,
-this should be okay.
+Note that whilst the activity data events (distance, stroke rate,
+heart rate, etc.) are captured from the S4 every 25 ms, the TCX export
+uses a 100ms resolution. The standard usage in TCX files is 1s in most
+activity software, although the schema allows any RFC3339 datetime,
+which we are using to provide higher frequency.

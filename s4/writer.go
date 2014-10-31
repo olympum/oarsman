@@ -32,6 +32,7 @@ func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
 	fmt.Fprintln(w, "<Activities>")
 	fmt.Fprintln(w, "<Activity Sport=\"Other\">")
 	fmt.Fprintf(w, "<Id>%s</Id>\n", util.MillisToZulu(collector.Activity.StartTimeMilliseconds))
+	fmt.Fprint(w, "<Creator><Name>Oarsman (WaterRower S4)</Name></Creator>")
 	fmt.Fprintf(w, "<Lap StartTime=\"%s\">\n", util.MillisToZulu(collector.Activity.StartTimeMilliseconds))
 	fmt.Fprintf(w, "<TotalTimeSeconds>%d</TotalTimeSeconds>\n", collector.Activity.TotalTimeSeconds())
 	fmt.Fprintf(w, "<DistanceMeters>%d</DistanceMeters>\n", collector.Activity.DistanceMeters)

@@ -100,14 +100,23 @@ func (db *OarsmanDB) CreateTables() error {
 	return nil
 }
 
-func (db *OarsmanDB) InitializeDatabase() error {
-	defer db.odb.Close()
-
-	e := db.CreateTables()
-	if e != nil {
-		return e
+func (db *OarsmanDB) InitializeDatabase() {
+	// TODO database migrations
+	q := `SELECT name FROM sqlite_master WHERE type='table' AND name='activity'`
+	var name string
+	err := db.odb.QueryRow(q).Scan(&name)
+	switch {
+	case err == sql.ErrNoRows:
+		jww.INFO.Println("Initializing database for the first time ...")
+		e := db.CreateTables()
+		if e != nil {
+			jww.ERROR.Println(e)
+		}
+	case err != nil:
+		jww.ERROR.Println(err)
+	default:
+		jww.DEBUG.Println("Activity table alreay exists in database")
 	}
-	return nil
 }
 
 func (db *OarsmanDB) ListActivities() []s4.Activity {

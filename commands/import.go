@@ -56,7 +56,7 @@ func importActivity(inputFile string, replay bool) *s4.Activity {
 	activity := collector.Activity
 	jww.INFO.Printf("Parsed activity with start time %d\n", activity.StartTimeMilliseconds)
 
-	database, error := WorkoutDatabase()
+	database, error := workoutDatabase()
 	if error != nil {
 		// TODO
 		return nil

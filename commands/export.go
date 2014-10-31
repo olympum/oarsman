@@ -26,7 +26,7 @@ before export.`,
 }
 
 func exportActivity(activityId int64) {
-	database, error := WorkoutDatabase()
+	database, error := workoutDatabase()
 	if error != nil {
 		// TODO
 		return
