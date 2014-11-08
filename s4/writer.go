@@ -10,19 +10,19 @@ import (
 
 type WriterFunc func(collector *EventCollector, writer *bufio.Writer)
 
-// func CSVWriter(collector *EventCollector, writer *bufio.Writer) {
-// 	fmt.Fprint(writer, "time,total_distance_meters,stroke_rate,watts,calories,speed_cm_s,heart_rate\n")
-// 	for _, event := range collector.events {
-// 		fmt.Fprintf(writer, "%d,%d,%d,%d,%d,%d,%d\n",
-// 			event.Time,
-// 			event.Total_distance_meters,
-// 			event.Stroke_rate,
-// 			event.Watts,
-// 			event.Calories,
-// 			event.Speed_cm_s,
-// 			event.Heart_rate)
-// 	}
-// }
+func CSVWriter(collector *EventCollector, writer *bufio.Writer) {
+	fmt.Fprint(writer, "time,total_distance_meters,stroke_rate,watts,calories,speed_cm_s,heart_rate\n")
+	for _, event := range collector.events {
+		fmt.Fprintf(writer, "%d,%d,%d,%d,%d,%d,%d\n",
+			event.Time,
+			event.Total_distance_meters,
+			event.Stroke_rate,
+			event.Watts,
+			event.Calories,
+			event.Speed_cm_s,
+			event.Heart_rate)
+	}
+}
 
 func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
 	// header

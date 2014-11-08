@@ -9,6 +9,8 @@ import (
 	"os"
 )
 
+var format string
+
 var exportCmd = &cobra.Command{
 	Use:   "export",
 	Short: "Export workout data from database",
@@ -58,10 +60,17 @@ func exportActivity(activityId int64) {
 
 	s.Run(nil)
 
-	tcx := viper.GetString("TempFolder") + string(os.PathSeparator) + fileName + ".tcx"
-	s4.ExportCollectorEvents(collector, tcx, s4.TCXWriter)
+	prefix := viper.GetString("TempFolder") + string(os.PathSeparator) + fileName
+	if format == "TCX" {
+		s4.ExportCollectorEvents(collector, prefix+".tcx", s4.TCXWriter)
+	} else if format == "CSV" {
+		s4.ExportCollectorEvents(collector, prefix+".csv", s4.CSVWriter)
+	} else {
+		jww.ERROR.Printf("Unknow export file format %s\n", format)
+	}
 }
 
 func init() {
 	exportCmd.Flags().Int64Var(&activityId, "id", 0, "id of activity to export")
+	exportCmd.Flags().StringVar(&format, "format", "TCX", "format to export activity as, TCX or CSV")
 }
