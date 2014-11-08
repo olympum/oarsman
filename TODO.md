@@ -1,5 +1,5 @@
 # TODO
 
-* Export CSV at 10Hz
-* Allow listing and removing activities
-* Strava integration for uploads
+* Export CSV
+* Web interface
+* [Strava integration](https://github.com/strava/go.strava) for uploads

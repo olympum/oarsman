@@ -25,6 +25,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
 `
 
+var deleteString = `
+
+DELETE FROM activity
+WHERE start_time_milliseconds = ?
+
+`
+
 var queryString = `
 
 SELECT
@@ -141,6 +148,19 @@ func (db *OarsmanDB) FindActivityById(id int64) *s4.Activity {
 	} else {
 		return nil
 	}
+}
+
+func (db *OarsmanDB) RemoveActivityById(id int64) *s4.Activity {
+	activity := db.FindActivityById(id)
+	if activity != nil {
+		_, error := db.odb.Exec(deleteString, id)
+		if error != nil {
+			jww.ERROR.Println(error)
+		} else {
+			jww.INFO.Printf("Rows deleted %d", activity.StartTimeMilliseconds)
+		}
+	}
+	return activity
 }
 
 func parseActivities(rows *sql.Rows) []s4.Activity {

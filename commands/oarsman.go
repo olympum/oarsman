@@ -11,6 +11,7 @@ import (
 
 var CfgFile string
 var Verbose bool
+var activityId int64
 
 var RootCmd = &cobra.Command{
 	Use:   "oarsman",
@@ -81,6 +82,8 @@ func AddCommands() {
 	RootCmd.AddCommand(workoutCmd)
 	RootCmd.AddCommand(exportCmd)
 	RootCmd.AddCommand(importCmd)
+	RootCmd.AddCommand(listCmd)
+	RootCmd.AddCommand(removeCmd)
 }
 
 func init() {

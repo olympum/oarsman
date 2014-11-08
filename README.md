@@ -57,16 +57,16 @@ of a full session:
 
 If you did not save the TCX file, you can always export individual
 activities as TCX (Garmin Training Center). To find out the workout
-activity id, first list all available workouts using the `export`
-command without and `id`:
+activity id, first list all available workouts using the `list`
+command:
 
-    $ oarsman export
+    $ oarsman list
     id,start_time,distance,ave_speed,max_speed
     1404553035100,2014-07-05T09:37:15Z,16408,4.214744,5.950000
     1414596607600,2014-10-29T15:30:07Z,200,3.174603,5.600000
 
 We see the id for the 200m workout we just did is `1414596607600`,
-therefore we type:
+so now we can export it with the `export` command:
 
     $ oarsman export --id=1414596607600
     2014/10/29 17:29:40 Writing aggregate data to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/1414596607600.tcx

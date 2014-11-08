@@ -1,15 +1,13 @@
 package commands
 
 import (
-	"fmt"
 	"github.com/olympum/oarsman/s4"
 	"github.com/olympum/oarsman/util"
 	"github.com/spf13/cobra"
+	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/viper"
 	"os"
 )
-
-var activityId int64
 
 var exportCmd = &cobra.Command{
 	Use:   "export",
@@ -34,20 +32,15 @@ func exportActivity(activityId int64) {
 	defer database.Close()
 
 	if activityId == 0 {
-		activities := database.ListActivities()
-		fmt.Println("id,start_time,distance,ave_speed,max_speed")
-		for _, activity := range activities {
-			fmt.Printf("%d,%s,%d,%f,%f\n",
-				activity.StartTimeMilliseconds,
-				activity.StartTimeZulu(),
-				activity.DistanceMeters,
-				activity.AverageSpeed(),
-				activity.MaximumSpeed())
-		}
 		return
 	}
 
 	activity := database.FindActivityById(activityId)
+	if activity == nil {
+		jww.ERROR.Printf("Activity %d not found\n", activityId)
+		return
+	}
+
 	eventChannel := make(chan s4.AtomicEvent)
 	aggregateEventChannel := make(chan s4.AggregateEvent)
 	collector := s4.NewEventCollector(aggregateEventChannel)
