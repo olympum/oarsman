@@ -6,7 +6,7 @@ import (
 )
 
 var VERSION = "v0.1"
-var DEV = "SNAPSHOT"
+var DEV = "201411-SNAPSHOT"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
@@ -14,6 +14,6 @@ var versionCmd = &cobra.Command{
 	Long: `
 The version number for this Oarsman build`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Oarsman WaterRower S4 Logger", VERSION, "--", DEV)
+		fmt.Println("Oarsman for WaterRower S4 2.10,", VERSION, "-- Revision ", DEV)
 	},
 }
