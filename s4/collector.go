@@ -15,8 +15,7 @@ func (collector *EventCollector) Run() {
 	collector.events = []AggregateEvent{}
 	for {
 		event := <-collector.channel
-		if event == EndAggregateEvent {
-		} else {
+		if event.Time != 0 {
 			n := collector.Activity.numSamples
 
 			if collector.Activity.StartTimeMilliseconds == 0 {

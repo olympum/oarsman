@@ -77,8 +77,6 @@ type AtomicEvent struct {
 	Value uint64
 }
 
-var EndAtomicEvent = AtomicEvent{}
-
 type S4 struct {
 	port       io.ReadWriteCloser
 	scanner    *bufio.Scanner
@@ -168,7 +166,7 @@ func (s4 *S4) Exit() {
 	if s4.workout.state != WorkoutExited {
 		s4.write(Packet{cmd: ExitRequest})
 		s4.workout.state = WorkoutExited
-		s4.aggregator.consume(EndAtomicEvent)
+		s4.aggregator.complete()
 	}
 }
 

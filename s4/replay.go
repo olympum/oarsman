@@ -36,6 +36,10 @@ func (s4 *ReplayS4) Run(workout *S4Workout) {
 			continue
 		}
 		time, _ := strconv.ParseInt(tokens[0], 10, 64)
+		if time == 0 {
+			// skip incorrect rows
+			continue
+		}
 		values := strings.Split(tokens[1], ":")
 		if len(values) < 2 {
 			continue
@@ -51,7 +55,7 @@ func (s4 *ReplayS4) Run(workout *S4Workout) {
 			t.Sleep(t.Millisecond * 25)
 		}
 	}
-	s4.aggregator.consume(EndAtomicEvent)
+	s4.aggregator.complete()
 }
 
 func (s4 *ReplayS4) Exit() {

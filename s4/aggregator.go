@@ -17,14 +17,19 @@ type Aggregator struct {
 	aggregateEventChannel chan<- AggregateEvent
 }
 
-var EndAggregateEvent = AggregateEvent{}
-
 func newAggregator(atomicEventChannel chan<- AtomicEvent, aggregateEventChannel chan<- AggregateEvent) Aggregator {
 	return Aggregator{
 		atomicEventChannel:    atomicEventChannel,
 		aggregateEventChannel: aggregateEventChannel,
 		reftime:               0,
 		event:                 AggregateEvent{}}
+}
+
+func (aggregator *Aggregator) complete() {
+	if aggregator.reftime != 0 {
+		aggregator.aggregateEventChannel <- aggregator.event
+		aggregator.reftime = 0
+	}
 }
 
 func (aggregator *Aggregator) consume(event AtomicEvent) {
@@ -34,11 +39,6 @@ func (aggregator *Aggregator) consume(event AtomicEvent) {
 
 	if aggregator.aggregateEventChannel == nil {
 		return
-	}
-
-	if event == EndAtomicEvent {
-		aggregator.aggregateEventChannel <- aggregator.event
-		aggregator.aggregateEventChannel <- EndAggregateEvent
 	}
 
 	if aggregator.reftime == 0 {
@@ -67,8 +67,7 @@ func (aggregator *Aggregator) consume(event AtomicEvent) {
 	}
 
 	if event.Time-aggregator.reftime >= 100 {
-		aggregator.aggregateEventChannel <- aggregator.event
-		aggregator.reftime = 0
+		aggregator.complete()
 	}
 
 }
