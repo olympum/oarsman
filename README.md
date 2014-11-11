@@ -11,11 +11,13 @@ and Windows on Prolific's site.
 The available commands are:
 
     version                   Print the version number
-    workout                   Start a rowing workout
+    train                     Start a rowing workout activity
     export                    Export workout data from database
     import                    Import workout data from database
+    list                      List all workout activities in the database
+    remove                    Remove an activity from the database
     help [command]            Help about any command
- 
+
 The program uses a SQLite3 database to store metadata about the
 workout activities. The database file and all raw workout logs are
 stored under the folder `.oarsman` in the user's home directory. The
@@ -24,36 +26,36 @@ the program is run.
 
 To do a short 200m test workout:
 
-    $ oarsman workout --distance=200
+    $ oarsman train --distance=200
 
 ... now ... get rowing. Once done, come back to your computer and hit
 RETURN (unfortunately that's the best I can do right now). The program
 will save a log file with the raw activity event data, insert the
 activity into the database, and export a TCX file. This is an example
-of a full session:
+of a full 110-minute session:
 
-    $ oarsman workout --duration=90m
-    INFO: 2014/10/31 Using configuration defaults
-    INFO: 2014/10/31 Working folder: /Users/brunofr/.oarsman
-    INFO: 2014/10/31 Db folder: /Users/brunofr/.oarsman/db
-    INFO: 2014/10/31 Workout folder: /Users/brunofr/.oarsman/workouts
-    INFO: 2014/10/31 Temp folder: /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman
-    INFO: 2014/10/31 Starting single duration workout: 5400 seconds
-    INFO: 2014/10/31 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-10-31T08:30:18Z.log
-    INFO: 2014/10/31 >>> Press RETURN to end workout ... <<<
-    INFO: 2014/10/31 WaterRower S4 02.10
+    $ oarsman train --duration=110m
+    INFO: 2014/11/10 Using configuration defaults
+    INFO: 2014/11/10 Working folder: /Users/brunofr/.oarsman
+    INFO: 2014/11/10 Db folder: /Users/brunofr/.oarsman/db
+    INFO: 2014/11/10 Workout folder: /Users/brunofr/.oarsman/workouts
+    INFO: 2014/11/10 Temp folder: /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman
+    INFO: 2014/11/10 Starting single duration workout: 6600 seconds
+    INFO: 2014/11/10 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-10T09:28:56Z.log
+    INFO: 2014/11/10 >>> Press RETURN to end workout ... <<<
+    INFO: 2014/11/10 WaterRower S4 02.10
 
-    INFO: 2014/10/31 Workout completed successfully
-    INFO: 2014/10/31 Importing activity from /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-10-31T08:30:18Z.log
-    INFO: 2014/10/31 Reading from /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-10-31T08:30:18Z.log
-    INFO: 2014/10/31 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/_m9Qlix_R8uN3zDNpkhW2RIs9OBEg548FwwjZA9vJ54=
-    INFO: 2014/10/31 Parsed activity with start time 1414744219400
-    INFO: 2014/10/31 Activity 1414744219400 saved to database
-    INFO: 2014/10/31 Activity log saved in /Users/brunofr/.oarsman/workouts/2014-10-31T08:30:19Z.log
-    INFO: 2014/10/31 Reading from /Users/brunofr/.oarsman/workouts/2014-10-31T08:30:19Z.log
-    INFO: 2014/10/31 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/HU2iF3wiDQzJvC2XkKXr2FCMa6je_unsNOR0Zhpnfmk=.log
-    INFO: 2014/10/31 Writing aggregate data to
-    /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-10-31T08:30:19Z.tcx
+    INFO: 2014/11/10 Workout completed successfully
+    INFO: 2014/11/10 Importing activity from /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-10T09:28:56Z.log
+    INFO: 2014/11/10 Reading from /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-10T09:28:56Z.log
+    INFO: 2014/11/10 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/iWnsTDJtTgJXV_35f8aOlnVPu5zAsdWq71LRkOBxTW4=
+    INFO: 2014/11/10 Parsed activity with start time 1415611737000
+    INFO: 2014/11/10 Activity 1415611737000 saved to database
+    INFO: 2014/11/10 Activity log saved in /Users/brunofr/.oarsman/workouts/2014-11-10T09:28:57Z.log
+    INFO: 2014/11/10 Reading from /Users/brunofr/.oarsman/workouts/2014-11-10T09:28:57Z.log
+    INFO: 2014/11/10 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/4zd1VuBbntMg_HOsHU7MZte2vnhmvnnEmZmzR2jegDE=.log
+    INFO: 2014/11/10 Writing aggregate data to
+    /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-10T09:28:57Z.tcx
 
 If you did not save the TCX file, you can always export individual
 activities as TCX (Garmin Training Center). To find out the workout
@@ -61,18 +63,21 @@ activity id, first list all available workouts using the `list`
 command:
 
     $ oarsman list
-    id,start_time,distance,ave_speed,max_speed
-    1404553035100,2014-07-05T09:37:15Z,16408,4.214744,5.950000
-    1414596607600,2014-10-29T15:30:07Z,200,3.174603,5.600000
+    id,start_time,distance,duration,ave_speed,max_speed,ave_cadence,max_cadence,ave_power,max_power,calories,ave_hr,max_hr
+    1397805238100,2014-04-18T07:13:58Z,10000,2307,4.334633723450368,0,20.037261698440233,24,0,0,0,135.1585788561523,149
+    1397807779100,2014-04-18T07:56:19Z,10000,2312,4.325259515570934,0,20.91915261565068,24,0,0,0,136.65067012537824,143
+    1415685752200,2014-11-11T06:02:32Z,15467,3686,4.196147585458491,5.95,19.970519317748337,27,149.9281783009095,221,799,134.4238188654578,155
 
-We see the id for the 200m workout we just did is `1414596607600`,
-so now we can export it with the `export` command:
+The `id` for the 110' workout we just did is `1415685752200`, which we
+can export with the `export` command:
 
-    $ oarsman export --id=1414596607600
-    2014/10/29 17:29:40 Writing aggregate data to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/1414596607600.tcx
+    $ oarsman export --id=1415685752200
+    INFO: 2014/11/11 Writing aggregate data to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-11T06:02:32Z.tcx
 
-Note that whilst the activity data events (distance, stroke rate,
-heart rate, etc.) are captured from the S4 every 25 ms, the TCX export
-uses a 100ms resolution. The standard usage in TCX files is 1s in most
-activity software, although the schema allows any RFC3339 datetime,
-which we are using to provide higher frequency.
+Note that the activity data events (distance, stroke rate, heart rate,
+etc.) are captured from the S4 every 25 ms in the raw log, alongside
+with pulse and stroke events. The exports, in TCX and CSV, are done at
+a 1000ms resolution (1Hz), i.e. using a track point every second.
+
+All workout activity files follow the RFC3339 for naming based on date
+and time.
