@@ -10,6 +10,8 @@ type AggregateEvent struct {
 	Heart_rate            uint64
 }
 
+const RESOLUTION = 1000
+
 type Aggregator struct {
 	reftime               int64
 	event                 AggregateEvent
@@ -42,8 +44,8 @@ func (aggregator *Aggregator) consume(event AtomicEvent) {
 	}
 
 	if aggregator.reftime == 0 {
-		aggregator.reftime = event.Time - event.Time%100
-		aggregator.event.Time = aggregator.reftime + 100
+		aggregator.reftime = event.Time - event.Time%RESOLUTION
+		aggregator.event.Time = aggregator.reftime + RESOLUTION
 	}
 
 	v := event.Value
@@ -66,7 +68,7 @@ func (aggregator *Aggregator) consume(event AtomicEvent) {
 		}
 	}
 
-	if event.Time-aggregator.reftime >= 100 {
+	if event.Time-aggregator.reftime >= RESOLUTION {
 		aggregator.complete()
 	}
 

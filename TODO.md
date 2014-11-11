@@ -7,7 +7,6 @@
 * Native app mode, via
   [Node-WebKit](https://github.com/jyapayne/Web2Executable)
 * [Strava integration](https://github.com/strava/go.strava) for uploads
-* Switch to 1Hz for export
 * Allow the list command to write onto a CSV file (similar to
   C2Utility) with splits.
 * Automatically create laps every 2,000 meters during import; store
