@@ -15,9 +15,9 @@ var distance uint64
 var duration time.Duration
 var debug bool
 
-var workoutCmd = &cobra.Command{
-	Use:   "workout",
-	Short: "Start a rowing workout",
+var trainCmd = &cobra.Command{
+	Use:   "train",
+	Short: "Start a rowing workout activity",
 	Long: `
 Send workout instructions to rowing monitor and start collecting
 rowing event data till workout is completed. Data is not saved in
@@ -66,7 +66,7 @@ the database (use the import command to save it in the database).`,
 }
 
 func init() {
-	workoutCmd.Flags().BoolVar(&debug, "debug", false, "debug communication data packets")
-	workoutCmd.Flags().Uint64Var(&distance, "distance", 2000, "distance of workout (in meters)")
-	workoutCmd.Flags().DurationVar(&duration, "duration", 0, "duration of workout (e.g. 1800s or 45m)")
+	trainCmd.Flags().BoolVar(&debug, "debug", false, "debug communication data packets")
+	trainCmd.Flags().Uint64Var(&distance, "distance", 2000, "distance of workout (in meters)")
+	trainCmd.Flags().DurationVar(&duration, "duration", 0, "duration of workout (e.g. 1800s or 45m)")
 }
