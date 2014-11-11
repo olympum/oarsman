@@ -10,6 +10,10 @@
 * Switch to 1Hz for export
 * Allow the list command to write onto a CSV file (similar to
   C2Utility) with splits.
-* Rename the workout command to something more meaningful, e.g. train.  
+* Rename the workout command to something more meaningful, e.g. train,
+  run, etc.
 * Automatically create laps every 2,000 meters during import; store
   this in the database and use it for listing, export, web, etc.
+* Enable a C2 emulation mode using the power watts as the source of
+  truth, which we then translate into pace (and speed) using the C2
+  formula, and from speed we infer distance.
