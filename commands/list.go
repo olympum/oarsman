@@ -27,18 +27,18 @@ func listActivities() {
 	activities := database.ListActivities()
 	fmt.Println("id,start_time,distance,duration,ave_speed,max_speed,ave_cadence,max_cadence,ave_power,max_power,calories,ave_hr,max_hr")
 	for _, activity := range activities {
-		fmt.Printf("%d,%s,%d,%d,%v,%v,%v,%v,%v,%v,%v,%v,%v\n",
+		fmt.Printf("%d,%s,%d,%d,%.2f,%.2f,%v,%v,%v,%v,%v,%v,%v\n",
 			activity.StartTimeMilliseconds,
-			activity.StartTimeZulu(),
+			activity.StartTimeZulu,
 			activity.DistanceMeters,
-			activity.TotalTimeSeconds(),
-			activity.AverageSpeed(),
-			activity.MaximumSpeed(),
-			activity.AverageCadence,
-			activity.MaximumCadence,
-			activity.AveragePower,
-			activity.MaximumPower,
-			activity.KCalories(),
+			activity.TotalTimeSeconds,
+			activity.AverageSpeedMs,
+			activity.MaximumSpeedMs,
+			activity.AverageCadenceRpm,
+			activity.MaximumCadenceRpm,
+			activity.AveragePowerWatts,
+			activity.MaximumPowerWatts,
+			activity.KCalories,
 			activity.AverageHeartRateBpm,
 			activity.MaximumHeartRateBpm)
 	}

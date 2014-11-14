@@ -27,7 +27,7 @@ as RAW (40Hz JSON formatted feed).`,
 	},
 }
 
-func importActivity(inputFile string, replay bool) *s4.Activity {
+func importActivity(inputFile string, replay bool) *s4.Lap {
 
 	if inputFile == "" {
 		jww.ERROR.Println("Nothing to import")
@@ -53,7 +53,7 @@ func importActivity(inputFile string, replay bool) *s4.Activity {
 
 	s.Run(nil)
 
-	activity := collector.Activity
+	activity := collector.Activity()
 	jww.INFO.Printf("Parsed activity with start time %d\n", activity.StartTimeMilliseconds)
 
 	database, error := workoutDatabase()
@@ -63,7 +63,10 @@ func importActivity(inputFile string, replay bool) *s4.Activity {
 	}
 	defer database.Close()
 
-	database.InsertActivity(activity) // move file to workout folder
+	if database.InsertActivity(activity) == nil {
+		return nil
+	}
+	// move file to workout folder
 	jww.INFO.Printf("Activity %d saved to database\n", activity.StartTimeMilliseconds)
 
 	workoutFile := viper.GetString("WorkoutFolder") + string(os.PathSeparator) + util.MillisToZulu(activity.StartTimeMilliseconds) + ".log"

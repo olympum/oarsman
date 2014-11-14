@@ -26,8 +26,6 @@ the database (use the import command to save it in the database).`,
 		InitializeConfig()
 		eventChannel := make(chan s4.AtomicEvent)
 		aggregateEventChannel := make(chan s4.AggregateEvent)
-		collector := s4.NewEventCollector(aggregateEventChannel)
-		go collector.Run()
 
 		stamp := util.MillisToZulu(time.Now().UnixNano() / 1000000)
 		tempFile := viper.GetString("TempFolder") + string(os.PathSeparator) + stamp + ".log"

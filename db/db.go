@@ -6,21 +6,29 @@ import (
 	jww "github.com/spf13/jwalterweatherman"
 )
 
+var fields = `
+start_time_milliseconds,
+start_time_seconds,
+start_time_zulu,
+total_time_seconds,
+distance_meters,
+maximum_speed_m_s,
+average_speed_m_s,
+kcalories,
+average_heart_rate_bpm,
+maximum_heart_rate_bpm,
+average_cadence_rpm,
+maximum_cadence_rpm,
+average_power_watts,
+maximum_power_watts
+`
+
 var insertString = `
 
-INSERT INTO activity (
-start_time_milliseconds,
-total_time_milliseconds,
-distance_meters,
-maximum_speed_cm_s,
-calories,
-average_heart_rate,
-maximum_heart_rate,
-average_power,
-maximum_power,
-average_cadence,
-maximum_cadence)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO activity
+(` + fields +
+	`)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
 
 `
@@ -34,37 +42,12 @@ WHERE start_time_milliseconds = ?
 
 var queryString = `
 
-SELECT
-start_time_milliseconds,
-total_time_milliseconds,
-distance_meters,
-maximum_speed_cm_s,
-calories,
-average_heart_rate,
-maximum_heart_rate,
-average_power,
-maximum_power,
-average_cadence,
-maximum_cadence
-FROM activity
+SELECT` + fields + `FROM activity
 
 `
 
-var selectString = `
+var selectString = queryString + `
 
-SELECT
-start_time_milliseconds,
-total_time_milliseconds,
-distance_meters,
-maximum_speed_cm_s,
-calories,
-average_heart_rate,
-maximum_heart_rate,
-average_power,
-maximum_power,
-average_cadence,
-maximum_cadence
-FROM activity
 WHERE start_time_milliseconds = ?
 
 `
@@ -72,17 +55,20 @@ WHERE start_time_milliseconds = ?
 var createTableString = `
 
 CREATE TABLE activity (
-       start_time_milliseconds INTEGER PRIMARY KEY,
-       total_time_milliseconds INTEGER,
-       distance_meters REAL,
-       maximum_speed_cm_s REAL,
-       calories INTEGER,
-       average_heart_rate INTEGER,
-       maximum_heart_rate INTEGER,
-       average_power INTEGER,
-       maximum_power INTEGER,
-       average_cadence INTEGER,
-       maximum_cadence INTEGER
+start_time_milliseconds INTEGER PRIMARY KEY,
+start_time_seconds INTEGER,
+start_time_zulu VARCHAR,
+total_time_seconds INTEGER,
+distance_meters INTEGER,
+maximum_speed_m_s REAL,
+average_speed_m_s REAL,
+kcalories INTEGER,
+average_heart_rate_bpm INTEGER,
+maximum_heart_rate_bpm INTEGER,
+average_cadence_rpm INTEGER,
+maximum_cadence_rpm INTEGER,
+average_power_watts INTEGER,
+maximum_power_watts INTEGER
 );
 
 `
@@ -126,17 +112,19 @@ func (db *OarsmanDB) InitializeDatabase() {
 	}
 }
 
-func (db *OarsmanDB) ListActivities() []s4.Activity {
+func (db *OarsmanDB) ListActivities() []s4.Lap {
+	jww.DEBUG.Println(queryString)
 	rows, err := db.odb.Query(queryString)
 	if err != nil {
 		jww.ERROR.Println(err)
-		var empty []s4.Activity
+		var empty []s4.Lap
 		return empty
 	}
 	return parseActivities(rows)
 }
 
-func (db *OarsmanDB) FindActivityById(id int64) *s4.Activity {
+func (db *OarsmanDB) FindActivityById(id int64) *s4.Lap {
+	jww.DEBUG.Printf("Looking for activity %d", id)
 	rows, err := db.odb.Query(selectString, id)
 	if err != nil {
 		jww.ERROR.Println(err)
@@ -144,93 +132,84 @@ func (db *OarsmanDB) FindActivityById(id int64) *s4.Activity {
 	}
 	activities := parseActivities(rows)
 	if len(activities) > 0 {
+		jww.DEBUG.Printf("Activity %d found", id)
 		return &activities[0]
 	} else {
+		jww.DEBUG.Printf("Activity %d not found", id)
 		return nil
 	}
 }
 
-func (db *OarsmanDB) RemoveActivityById(id int64) *s4.Activity {
+func (db *OarsmanDB) RemoveActivityById(id int64) *s4.Lap {
+	jww.DEBUG.Printf("Removing activity %d", id)
 	activity := db.FindActivityById(id)
 	if activity != nil {
 		_, error := db.odb.Exec(deleteString, id)
 		if error != nil {
 			jww.ERROR.Println(error)
 		} else {
-			jww.INFO.Printf("Rows deleted %d", activity.StartTimeMilliseconds)
+			jww.INFO.Printf("Activity %d deleted", activity.StartTimeMilliseconds)
 		}
 	}
 	return activity
 }
 
-func parseActivities(rows *sql.Rows) []s4.Activity {
-	var activities []s4.Activity
+func parseActivities(rows *sql.Rows) []s4.Lap {
+	var activities []s4.Lap
 	for rows.Next() {
-		var start_time_milliseconds int64
-		var total_time_milliseconds int64
-		var distance_meters uint64
-		var maximum_speed_cm_s uint64
-		var calories uint64
-		var average_heart_rate_bpm float64
-		var maximum_heart_rate_bpm uint64
-		var average_power float64
-		var maximum_power uint64
-		var average_cadence float64
-		var maxmimum_cadence uint64
 
-		rows.Scan(&start_time_milliseconds,
-			&total_time_milliseconds,
-			&distance_meters,
-			&maximum_speed_cm_s,
-			&calories,
-			&average_heart_rate_bpm,
-			&maximum_heart_rate_bpm,
-			&average_power,
-			&maximum_power,
-			&average_cadence,
-			&maxmimum_cadence)
-		activity := s4.Activity{
-			StartTimeMilliseconds: start_time_milliseconds,
-			TotalTimeMilliseconds: total_time_milliseconds,
-			DistanceMeters:        distance_meters,
-			MaximumSpeed_cm_s:     maximum_speed_cm_s,
-			Calories:              calories,
-			AverageHeartRateBpm:   average_heart_rate_bpm,
-			MaximumHeartRateBpm:   maximum_heart_rate_bpm,
-			AveragePower:          average_power,
-			MaximumPower:          maximum_power,
-			AverageCadence:        average_cadence,
-			MaximumCadence:        maxmimum_cadence,
-		}
-		activities = append(activities, activity)
+		lap := s4.NewLap()
+
+		rows.Scan(&lap.StartTimeMilliseconds,
+			&lap.StartTimeSeconds,
+			&lap.StartTimeZulu,
+			&lap.TotalTimeSeconds,
+			&lap.DistanceMeters,
+			&lap.MaximumSpeedMs,
+			&lap.AverageSpeedMs,
+			&lap.KCalories,
+			&lap.AverageHeartRateBpm,
+			&lap.MaximumHeartRateBpm,
+			&lap.AverageCadenceRpm,
+			&lap.MaximumCadenceRpm,
+			&lap.AveragePowerWatts,
+			&lap.MaximumPowerWatts,
+		)
+
+		jww.DEBUG.Printf("Parsed activity with %v start time", lap.StartTimeMilliseconds)
+
+		activities = append(activities, lap)
 	}
 	return activities
 }
 
-func (db *OarsmanDB) InsertActivity(activity *s4.Activity) {
+func (db *OarsmanDB) InsertActivity(activity *s4.Lap) *s4.Lap {
 
 	if db.FindActivityById(activity.StartTimeMilliseconds) != nil {
 		jww.ERROR.Printf("Activity already exists in database, ignoring %d\n", activity.StartTimeMilliseconds)
-		return
+		return nil
 	}
 
-	jww.DEBUG.Println(activity)
 	result, err := db.odb.Exec(insertString,
 		activity.StartTimeMilliseconds,
-		activity.TotalTimeMilliseconds,
+		activity.StartTimeSeconds,
+		activity.StartTimeZulu,
+		activity.TotalTimeSeconds,
 		activity.DistanceMeters,
-		activity.MaximumSpeed_cm_s,
-		activity.Calories,
+		activity.MaximumSpeedMs,
+		activity.AverageSpeedMs,
+		activity.KCalories,
 		activity.AverageHeartRateBpm,
 		activity.MaximumHeartRateBpm,
-		activity.AveragePower,
-		activity.MaximumPower,
-		activity.AverageCadence,
-		activity.MaximumCadence,
+		activity.AverageCadenceRpm,
+		activity.MaximumCadenceRpm,
+		activity.AveragePowerWatts,
+		activity.MaximumPowerWatts,
 	)
 	if err != nil {
 		jww.ERROR.Print(err)
 	}
 	jww.DEBUG.Print(result)
 
+	return activity
 }

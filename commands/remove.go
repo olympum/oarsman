@@ -26,24 +26,24 @@ func removeActivity(activityId int64) {
 	}
 	defer database.Close()
 
-	if activityId == 0 {
+	if activityId == -1 {
 		return
 	}
 
 	activity := database.RemoveActivityById(activityId)
 
 	if activity != nil {
-		fmt.Printf("Row deleted\n%d,%s,%d,%f,%f\n",
+		fmt.Printf("Row %d deleted: %s,%d,%f,%f\n",
 			activity.StartTimeMilliseconds,
-			activity.StartTimeZulu(),
+			activity.StartTimeZulu,
 			activity.DistanceMeters,
-			activity.AverageSpeed(),
-			activity.MaximumSpeed())
+			activity.AverageSpeedMs,
+			activity.MaximumSpeedMs)
 	} else {
 		jww.ERROR.Printf("Activity %d not found", activityId)
 	}
 }
 
 func init() {
-	removeCmd.Flags().Int64Var(&activityId, "id", 0, "id of activity to remove")
+	removeCmd.Flags().Int64Var(&activityId, "id", -1, "id of activity to remove")
 }
