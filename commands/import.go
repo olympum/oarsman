@@ -54,6 +54,10 @@ func importActivity(inputFile string, replay bool) *s4.Lap {
 	s.Run(nil)
 
 	activity := collector.Activity()
+	if activity == nil {
+		jww.ERROR.Printf("Empty or incorrect activity for log file %s\n", inputFile)
+		return nil
+	}
 	jww.INFO.Printf("Parsed activity with start time %d\n", activity.StartTimeMilliseconds)
 
 	database, error := workoutDatabase()

@@ -207,7 +207,8 @@ func (db *OarsmanDB) InsertActivity(activity *s4.Lap) *s4.Lap {
 		activity.MaximumPowerWatts,
 	)
 	if err != nil {
-		jww.ERROR.Print(err)
+		jww.ERROR.Printf("Could not insert activity with id %v into database: %v", activity.StartTimeMilliseconds, err)
+		return nil
 	}
 	jww.DEBUG.Print(result)
 

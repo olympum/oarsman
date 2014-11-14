@@ -35,25 +35,10 @@ func (collector *EventCollector) Laps() []*Lap {
 }
 
 func (collector *EventCollector) Activity() *Lap {
-	if len(collector.laps) == 0 {
+	if len(collector.laps) == 0 || len(collector.laps[0].events) == 0 {
 		return nil
 	}
 	lap := NewLap()
-
-	// StartTimeMilliseconds int64
-	// StartTimeSeconds      int64
-	// StartTimeZulu         string
-	// TotalTimeSeconds      int64
-	// DistanceMeters        uint64
-	// MaximumSpeedMs        float64
-	// AverageSpeedMs        float64
-	// KCalories             uint64
-	// AverageHeartRateBpm   uint64
-	// MaximumHeartRateBpm   uint64
-	// AverageCadenceRpm     uint64
-	// MaximumCadenceRpm     uint64
-	// AveragePowerWatts     uint64
-	// MaximumPowerWatts     uint64
 
 	first := collector.laps[0]
 	last := collector.laps[len(collector.laps)-1]
@@ -90,5 +75,10 @@ func (collector *EventCollector) Activity() *Lap {
 	lap.AverageHeartRateBpm = uint64(float64(lap.AverageHeartRateBpm) / float64(lap.TotalTimeSeconds))
 	lap.AveragePowerWatts = uint64(float64(lap.AveragePowerWatts) / float64(lap.TotalTimeSeconds))
 	lap.AverageSpeedMs = float64(lap.DistanceMeters) / float64(lap.TotalTimeSeconds)
-	return &lap
+
+	if lap.TotalTimeSeconds == 0 || lap.DistanceMeters == 0 {
+		return nil
+	} else {
+		return &lap
+	}
 }
