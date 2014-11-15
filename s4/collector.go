@@ -19,6 +19,7 @@ func (collector *EventCollector) Run() {
 
 	for {
 		event := <-collector.channel
+		jww.DEBUG.Printf("Received event to collect: %v", event)
 		lap := collector.laps[len(collector.laps)-1]
 		lap.AddEvent(event)
 		if event.Total_distance_meters > 0 && event.Total_distance_meters%2000 == 0 {

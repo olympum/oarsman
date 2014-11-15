@@ -1,5 +1,9 @@
 package s4
 
+import (
+	jww "github.com/spf13/jwalterweatherman"
+)
+
 type AggregateEvent struct {
 	Time_start            int64
 	Time                  int64
@@ -27,16 +31,26 @@ func newAggregator(atomicEventChannel chan<- AtomicEvent, aggregateEventChannel 
 		event: &AggregateEvent{}}
 }
 
+func (aggregator Aggregator) send(event *AggregateEvent) bool {
+	if aggregator.aggregateEventChannel == nil {
+		return false
+	}
+
+	aggregator.aggregateEventChannel <- *event
+	aggregator.event = &AggregateEvent{}
+	aggregator.event.Start_distance_meters = event.Total_distance_meters
+	aggregator.event.Total_distance_meters = event.Total_distance_meters
+	jww.DEBUG.Print("Sent aggregate event", event)
+	return true
+}
+
 func (aggregator *Aggregator) complete() {
 	e := aggregator.event
 	delta_time := float64(e.Time - e.Time_start)
 	delta_distance := float64(e.Total_distance_meters - e.Start_distance_meters)
 	if delta_time > 0 && delta_distance > 0 {
 		e.Speed_m_s = delta_distance * 1000.0 / delta_time
-		aggregator.aggregateEventChannel <- *e
-		aggregator.event = &AggregateEvent{}
-		aggregator.event.Start_distance_meters = e.Total_distance_meters
-		aggregator.event.Total_distance_meters = e.Total_distance_meters
+		aggregator.send(e)
 	}
 
 }
@@ -44,6 +58,7 @@ func (aggregator *Aggregator) complete() {
 func (aggregator *Aggregator) consume(event AtomicEvent) {
 	if aggregator.atomicEventChannel != nil {
 		aggregator.atomicEventChannel <- event
+		jww.DEBUG.Print("Sent atomic event", event)
 	}
 
 	if aggregator.aggregateEventChannel == nil {
@@ -62,8 +77,7 @@ func (aggregator *Aggregator) consume(event AtomicEvent) {
 	case "total_distance_meters":
 		e.Total_distance_meters = v
 		if v == 0 {
-			aggregator.aggregateEventChannel <- *e
-			aggregator.event = &AggregateEvent{}
+			aggregator.send(e)
 		}
 	case "stroke_rate":
 		e.Stroke_rate = v

@@ -25,14 +25,13 @@ the database (use the import command to save it in the database).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		InitializeConfig()
 		eventChannel := make(chan s4.AtomicEvent)
-		aggregateEventChannel := make(chan s4.AggregateEvent)
 
 		stamp := util.MillisToZulu(time.Now().UnixNano() / 1000000)
 		tempFile := viper.GetString("TempFolder") + string(os.PathSeparator) + stamp + ".log"
 		go s4.Logger(eventChannel, tempFile)
 		workout := s4.NewS4Workout()
 		workout.AddSingleWorkout(duration, distance)
-		s := s4.NewS4(eventChannel, aggregateEventChannel, debug)
+		s := s4.NewS4(eventChannel, nil, debug)
 
 		// TODO we should detect a workout completition, not use OS signals
 		ch := make(chan os.Signal)
