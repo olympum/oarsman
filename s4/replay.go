@@ -22,7 +22,7 @@ func NewReplayS4(eventChannel chan<- AtomicEvent, aggregateEventChannel chan<- A
 		jww.FATAL.Printf("Could not read %s\n", replayfile)
 		return nil, err
 	}
-	jww.INFO.Printf("Reading from %s\n", f.Name())
+	jww.DEBUG.Printf("Reading from %s\n", f.Name())
 	s := bufio.NewScanner(f)
 	aggregator := newAggregator(eventChannel, aggregateEventChannel)
 	return &ReplayS4{scanner: s, aggregator: aggregator, replay: replay, debug: debug}, nil
