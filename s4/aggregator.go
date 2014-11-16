@@ -31,15 +31,19 @@ func newAggregator(atomicEventChannel chan<- AtomicEvent, aggregateEventChannel 
 		event: &AggregateEvent{}}
 }
 
-func (aggregator Aggregator) send(event *AggregateEvent) bool {
+func (aggregator *Aggregator) send(event *AggregateEvent) bool {
 	if aggregator.aggregateEventChannel == nil {
 		return false
 	}
 
-	aggregator.aggregateEventChannel <- *event
-	aggregator.event = &AggregateEvent{}
-	aggregator.event.Start_distance_meters = event.Total_distance_meters
-	aggregator.event.Total_distance_meters = event.Total_distance_meters
+	toBeSent := *event
+
+	newEvent := AggregateEvent{}
+	newEvent.Start_distance_meters = toBeSent.Total_distance_meters
+	newEvent.Total_distance_meters = toBeSent.Total_distance_meters
+	aggregator.event = &newEvent
+
+	aggregator.aggregateEventChannel <- toBeSent
 	jww.DEBUG.Print("Sent aggregate event", event)
 	return true
 }
@@ -55,51 +59,53 @@ func (aggregator *Aggregator) complete() {
 
 }
 
-func (aggregator *Aggregator) consume(event AtomicEvent) {
+func (aggregator *Aggregator) consume(atomicEvent AtomicEvent) {
 	if aggregator.atomicEventChannel != nil {
-		aggregator.atomicEventChannel <- event
-		jww.DEBUG.Print("Sent atomic event", event)
+		aggregator.atomicEventChannel <- atomicEvent
+		jww.DEBUG.Print("Sent atomic event", atomicEvent)
 	}
 
 	if aggregator.aggregateEventChannel == nil {
 		return
 	}
 
-	e := aggregator.event
-	e.Time = event.Time
-
-	if e.Time_start == 0 {
-		e.Time_start = e.Time
+	aggregateEvent := aggregator.event
+	jww.DEBUG.Println("Current aggregate event", aggregateEvent)
+	if aggregateEvent.Time_start == 0 {
+		aggregateEvent.Time_start = atomicEvent.Time
 	}
+	aggregateEvent.Time = atomicEvent.Time
 
-	v := event.Value
-	switch event.Label {
+	v := atomicEvent.Value
+	switch atomicEvent.Label {
 	case "total_distance_meters":
-		e.Total_distance_meters = v
+		aggregateEvent.Total_distance_meters = v
 		if v == 0 {
-			aggregator.send(e)
+			aggregator.send(aggregateEvent)
 		}
 	case "stroke_rate":
-		e.Stroke_rate = v
+		aggregateEvent.Stroke_rate = v
 	case "watts":
 		if v > 0 {
-			e.Watts = v
+			aggregateEvent.Watts = v
 		}
 	case "calories":
-		e.Calories = v
+		aggregateEvent.Calories = v
 	case "heart_rate":
 		if v > 0 {
-			e.Heart_rate = v
+			aggregateEvent.Heart_rate = v
 		}
 	}
 
-	if e.Time-e.Time_start >= MAX_RESOLUTION_MILLIS {
+	if aggregateEvent.Time-aggregateEvent.Time_start >= MAX_RESOLUTION_MILLIS {
 		aggregator.complete()
 	}
 
 	// auto-laps every 2000 meters
-	if e.Total_distance_meters%2000 == 0 {
+	if aggregateEvent.Total_distance_meters%2000 == 0 {
 		aggregator.complete()
 	}
+
+	jww.DEBUG.Println("Current aggregate event", aggregateEvent)
 
 }
