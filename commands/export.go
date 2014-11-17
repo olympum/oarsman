@@ -62,9 +62,9 @@ func exportActivity(activityId int64) {
 
 	prefix := viper.GetString("TempFolder") + string(os.PathSeparator) + fileName
 	if format == "TCX" {
-		s4.ExportCollectorEvents(collector, prefix+".tcx", s4.TCXWriter)
+		s4.ExportCollectorEvents(collector.Activity(), prefix+".tcx", s4.TCXWriter)
 	} else if format == "CSV" {
-		s4.ExportCollectorEvents(collector, prefix+".csv", s4.CSVWriter)
+		s4.ExportCollectorEvents(collector.Activity(), prefix+".csv", s4.CSVWriter)
 	} else {
 		jww.ERROR.Printf("Unknow export file format %s\n", format)
 	}

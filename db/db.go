@@ -10,6 +10,7 @@ var fields = `
 start_time_milliseconds,
 start_time_seconds,
 start_time_zulu,
+parent_start_time_milliseconds,
 total_time_seconds,
 distance_meters,
 maximum_speed_m_s,
@@ -28,7 +29,7 @@ var insertString = `
 INSERT INTO activity
 (` + fields +
 	`)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
 
 `
@@ -40,24 +41,37 @@ WHERE start_time_milliseconds = ?
 
 `
 
-var queryString = `
+var selectAllActivitiesString = `
 
-SELECT` + fields + `FROM activity
+SELECT` + fields + `
+FROM activity
+WHERE parent_start_time_milliseconds = -1
 
 `
 
-var selectString = queryString + `
+var selectActivityString = `
 
-WHERE start_time_milliseconds = ?
+SELECT` + fields + `
+FROM activity
+WHERE parent_start_time_milliseconds = -1
+AND start_time_milliseconds = ?
+
+`
+var selectAllLapsString = `
+
+SELECT` + fields + `
+FROM activity
+WHERE parent_start_time_milliseconds = ?
 
 `
 
 var createTableString = `
 
 CREATE TABLE activity (
-start_time_milliseconds INTEGER PRIMARY KEY,
+start_time_milliseconds INTEGER,
 start_time_seconds INTEGER,
 start_time_zulu VARCHAR,
+parent_start_time_milliseconds INTEGER,
 total_time_seconds INTEGER,
 distance_meters INTEGER,
 maximum_speed_m_s REAL,
@@ -112,35 +126,63 @@ func (db *OarsmanDB) InitializeDatabase() {
 	}
 }
 
-func (db *OarsmanDB) ListActivities() []s4.Lap {
-	jww.DEBUG.Println(queryString)
-	rows, err := db.odb.Query(queryString)
-	if err != nil {
-		jww.ERROR.Println(err)
-		var empty []s4.Lap
-		return empty
-	}
-	return parseActivities(rows)
-}
-
-func (db *OarsmanDB) FindActivityById(id int64) *s4.Lap {
-	jww.DEBUG.Printf("Looking for activity %d", id)
-	rows, err := db.odb.Query(selectString, id)
+func (db *OarsmanDB) ListActivities() []*s4.Activity {
+	jww.DEBUG.Println(selectAllActivitiesString)
+	rows, err := db.odb.Query(selectAllActivitiesString)
 	if err != nil {
 		jww.ERROR.Println(err)
 		return nil
 	}
-	activities := parseActivities(rows)
-	if len(activities) > 0 {
+	laps := parseLaps(rows)
+
+	activities := []*s4.Activity{}
+	if len(laps) == 0 {
+		jww.DEBUG.Println("No activities found")
+		return nil
+	}
+	for _, lap := range laps {
+		activity := s4.NewActivity(lap, nil)
+		activities = append(activities, activity)
+		jww.DEBUG.Println("Converted lap into activity", activity)
+	}
+	return activities
+}
+
+func (db *OarsmanDB) FindActivityById(id int64) *s4.Activity {
+	jww.DEBUG.Printf("Looking for activity %d", id)
+	rows, err := db.odb.Query(selectActivityString, id)
+	if err != nil {
+		jww.ERROR.Println(err)
+		return nil
+	}
+	laps := parseLaps(rows)
+	if len(laps) > 0 {
 		jww.DEBUG.Printf("Activity %d found", id)
-		return &activities[0]
+		return s4.NewActivity(laps[0], nil)
 	} else {
 		jww.DEBUG.Printf("Activity %d not found", id)
 		return nil
 	}
 }
 
-func (db *OarsmanDB) RemoveActivityById(id int64) *s4.Lap {
+func (db *OarsmanDB) FindLapsByParentId(id int64) []*s4.Lap {
+	jww.DEBUG.Printf("Looking for laps for activity %d", id)
+	rows, err := db.odb.Query(selectAllLapsString, id)
+	if err != nil {
+		jww.ERROR.Println(err)
+		return nil
+	}
+	laps := parseLaps(rows)
+	if len(laps) > 0 {
+		jww.DEBUG.Printf("Laps for activity %d found", id)
+		return laps
+	} else {
+		jww.DEBUG.Printf("Laps for activity %d not found", id)
+		return nil
+	}
+}
+
+func (db *OarsmanDB) RemoveActivityById(id int64) *s4.Activity {
 	jww.DEBUG.Printf("Removing activity %d", id)
 	activity := db.FindActivityById(id)
 	if activity != nil {
@@ -154,15 +196,17 @@ func (db *OarsmanDB) RemoveActivityById(id int64) *s4.Lap {
 	return activity
 }
 
-func parseActivities(rows *sql.Rows) []s4.Lap {
-	var activities []s4.Lap
+func parseLaps(rows *sql.Rows) []*s4.Lap {
+	laps := []*s4.Lap{}
 	for rows.Next() {
 
 		lap := s4.NewLap()
+		var id int64
 
 		rows.Scan(&lap.StartTimeMilliseconds,
 			&lap.StartTimeSeconds,
 			&lap.StartTimeZulu,
+			&id,
 			&lap.TotalTimeSeconds,
 			&lap.DistanceMeters,
 			&lap.MaximumSpeedMs,
@@ -176,14 +220,15 @@ func parseActivities(rows *sql.Rows) []s4.Lap {
 			&lap.MaximumPowerWatts,
 		)
 
-		jww.DEBUG.Printf("Parsed activity with %v start time", lap.StartTimeMilliseconds)
+		jww.DEBUG.Printf("Parsed lap with %v start time, parent id %v: %v", lap.StartTimeMilliseconds, id, lap)
 
-		activities = append(activities, lap)
+		laps = append(laps, &lap)
 	}
-	return activities
+	jww.DEBUG.Println("Laps parsed", len(laps))
+	return laps
 }
 
-func (db *OarsmanDB) InsertActivity(activity *s4.Lap) *s4.Lap {
+func (db *OarsmanDB) InsertActivity(activity *s4.Activity) *s4.Activity {
 
 	if db.FindActivityById(activity.StartTimeMilliseconds) != nil {
 		jww.ERROR.Printf("Activity already exists in database, ignoring %d\n", activity.StartTimeMilliseconds)
@@ -194,6 +239,7 @@ func (db *OarsmanDB) InsertActivity(activity *s4.Lap) *s4.Lap {
 		activity.StartTimeMilliseconds,
 		activity.StartTimeSeconds,
 		activity.StartTimeZulu,
+		-1,
 		activity.TotalTimeSeconds,
 		activity.DistanceMeters,
 		activity.MaximumSpeedMs,
@@ -209,8 +255,33 @@ func (db *OarsmanDB) InsertActivity(activity *s4.Lap) *s4.Lap {
 	if err != nil {
 		jww.ERROR.Printf("Could not insert activity with id %v into database: %v", activity.StartTimeMilliseconds, err)
 		return nil
+	} else {
+		for _, lap := range activity.Laps() {
+			result, err := db.odb.Exec(insertString,
+				lap.StartTimeMilliseconds,
+				lap.StartTimeSeconds,
+				lap.StartTimeZulu,
+				activity.StartTimeMilliseconds,
+				lap.TotalTimeSeconds,
+				lap.DistanceMeters,
+				lap.MaximumSpeedMs,
+				lap.AverageSpeedMs,
+				lap.KCalories,
+				lap.AverageHeartRateBpm,
+				lap.MaximumHeartRateBpm,
+				lap.AverageCadenceRpm,
+				lap.MaximumCadenceRpm,
+				lap.AveragePowerWatts,
+				lap.MaximumPowerWatts,
+			)
+			if err != nil {
+				jww.ERROR.Println("Could not insert lap in the database", err)
+			}
+			jww.DEBUG.Println("Inserted lap", lap, result)
+		}
 	}
-	jww.DEBUG.Print(result)
+
+	jww.DEBUG.Println("Inserted activity", activity, result)
 
 	return activity
 }

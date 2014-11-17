@@ -27,7 +27,7 @@ as RAW (40Hz JSON formatted feed).`,
 	},
 }
 
-func importActivity(inputFile string, replay bool) *s4.Lap {
+func importActivity(inputFile string, replay bool) *s4.Activity {
 
 	if inputFile == "" {
 		jww.ERROR.Println("Nothing to import")

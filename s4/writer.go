@@ -8,10 +8,10 @@ import (
 	"os"
 )
 
-type WriterFunc func(collector *EventCollector, writer *bufio.Writer)
+type WriterFunc func(activity *Activity, writer *bufio.Writer)
 
-func CSVWriter(collector *EventCollector, writer *bufio.Writer) {
-	laps := collector.laps
+func CSVWriter(activity *Activity, writer *bufio.Writer) {
+	laps := activity.laps
 	if len(laps) == 0 {
 		jww.INFO.Println("Empty activity")
 		return
@@ -34,8 +34,8 @@ func CSVWriter(collector *EventCollector, writer *bufio.Writer) {
 	}
 }
 
-func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
-	laps := collector.laps
+func TCXWriter(activity *Activity, writer *bufio.Writer) {
+	laps := activity.laps
 	if len(laps) == 0 {
 		jww.INFO.Println("Empty activity")
 		return
@@ -95,7 +95,7 @@ func TCXWriter(collector *EventCollector, writer *bufio.Writer) {
 	w.Flush()
 }
 
-func ExportCollectorEvents(collector *EventCollector, filename string, writerFunc WriterFunc) {
+func ExportCollectorEvents(activity *Activity, filename string, writerFunc WriterFunc) {
 	f, err := os.Create(filename)
 	if err != nil {
 		jww.FATAL.Printf("Could not create %s\n", filename)
@@ -105,5 +105,5 @@ func ExportCollectorEvents(collector *EventCollector, filename string, writerFun
 	var w *bufio.Writer
 	w = bufio.NewWriter(f)
 	jww.INFO.Printf("Writing aggregate data to %s\n", f.Name())
-	writerFunc(collector, w)
+	writerFunc(activity, w)
 }
