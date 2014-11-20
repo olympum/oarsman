@@ -81,3 +81,21 @@ a 1000ms resolution (1Hz), i.e. using a track point every second.
 
 All workout activity files follow the RFC3339 for naming based on date
 and time.
+
+## Vendoring ##
+
+This project uses [godep](https://github.com/tools/godep) for
+"vendoring". To restore the working versions, after git checkout:
+
+    $ godep restore
+
+To add a dependency into `godep`, first use it in the code (either
+through an explicit `go get` command or implicitly via import and `go
+build`. Then, to add the dependency to the `Godeps/Godeps.json` file:
+
+    $ godep save
+
+To update a dependency:
+
+    $ go get -u foo/bar
+    $ godep update foo/bar

@@ -2,3 +2,5 @@
 logs
 *.log
 *.csv
+_workspace
+Godeps/Readme
