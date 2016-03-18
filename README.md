@@ -84,18 +84,22 @@ and time.
 
 ## Vendoring ##
 
-This project uses [godep](https://github.com/tools/godep) for
-"vendoring". To restore the working versions, after git checkout:
+This project uses vendoring and govendor. To install govendor:
 
-    $ godep restore
+```
+go get -u github.com/kardianos/govendor
+```
 
-To add a dependency into `godep`, first use it in the code (either
-through an explicit `go get` command or implicitly via import and `go
-build`. Then, to add the dependency to the `Godeps/Godeps.json` file:
+To restore after a checkout:
 
-    $ godep save
+```
+govendor sync
+```
 
-To update a dependency:
+To add a dependency to latest, to a tag, or to a specific commit:
 
-    $ go get -u foo/bar
-    $ godep update foo/bar
+```
+govendor fetch golang.org/x/net/context
+govendor fetch golang.org/x/net/context@v1
+govendor fetch golang.org/x/net/context@a4bbce9fcae005b22ae5443f6af064d80a6f5a55
+```
