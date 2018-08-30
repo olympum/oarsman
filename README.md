@@ -82,24 +82,6 @@ a 1000ms resolution (1Hz), i.e. using a track point every second.
 All workout activity files follow the RFC3339 for naming based on date
 and time.
 
-## Vendoring ##
+## Modules ##
 
-This project uses vendoring and govendor. To install govendor:
-
-```
-go get -u github.com/kardianos/govendor
-```
-
-To restore after a checkout:
-
-```
-govendor sync
-```
-
-To add a dependency to latest, to a tag, or to a specific commit:
-
-```
-govendor fetch golang.org/x/net/context
-govendor fetch golang.org/x/net/context@v1
-govendor fetch golang.org/x/net/context@a4bbce9fcae005b22ae5443f6af064d80a6f5a55
-```
+Since GOVERSION 1.1 this project uses [modules](https://github.com/golang/go/wiki/Modules), and no longer leverages vendoring and `govendor`.
