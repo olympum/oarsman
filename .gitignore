@@ -3,3 +3,4 @@ logs
 *.log
 *.csv
 vendor/*/
+oarsman
