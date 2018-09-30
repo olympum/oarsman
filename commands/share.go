@@ -2,7 +2,6 @@ package commands
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
@@ -22,7 +21,7 @@ var token string
 var shareCmd = &cobra.Command{
 	Use:   "share",
 	Short: "Share workout on Strava",
-	Long: ``,
+	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		InitializeConfig()
 		shareActivity(activityId)
@@ -72,7 +71,6 @@ func shareActivity(activityId int64) {
 		"description":   "with my WaterRower",
 		"trainer":       "1",
 		"data_type":     "tcx",
-		"code":          "14fb0b7cb581601bf31c9f6742ebc9b8972f90d2",
 	}
 
 	request, err := newfileUploadRequest("https://www.strava.com/api/v3/uploads", extraParams, "file", prefix+".tcx")
@@ -90,10 +88,12 @@ func shareActivity(activityId int64) {
 			log.Fatal(err)
 		}
 		resp.Body.Close()
-		fmt.Println(resp.StatusCode)
-		fmt.Println(resp.Header)
 
-		fmt.Println(body)
+		if resp.StatusCode == 201 {
+			jww.INFO.Println("Upload to Strava: success.")
+		} else {
+			jww.ERROR.Println("Upload to Strava: failed.", body)
+		}
 	}
 }
 
