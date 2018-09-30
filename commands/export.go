@@ -1,12 +1,12 @@
 package commands
 
 import (
+	"os"
 	"github.com/olympum/oarsman/s4"
 	"github.com/olympum/oarsman/util"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/viper"
-	"os"
 )
 
 var format string
@@ -60,7 +60,7 @@ func exportActivity(activityId int64) {
 
 	s.Run(nil)
 
-	prefix := viper.GetString("TempFolder") + string(os.PathSeparator) + fileName
+	prefix := viper.GetString("ExportFolder") + string(os.PathSeparator) + fileName
 	if format == "TCX" {
 		s4.ExportCollectorEvents(collector.Activity(), prefix+".tcx", s4.TCXWriter)
 	} else if format == "CSV" {

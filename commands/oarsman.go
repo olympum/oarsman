@@ -1,12 +1,12 @@
 package commands
 
 import (
+	"os"
+	"os/user"
 	"github.com/olympum/oarsman/util"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/viper"
-	"os"
-	"os/user"
 )
 
 var CfgFile string
@@ -61,6 +61,9 @@ func InitializeConfig() {
 
 	workoutFolder := workingFolder + string(os.PathSeparator) + "workouts"
 	SetupFolder(workoutFolder, "WorkoutFolder", "Workout folder:")
+
+	exportFolder := workingFolder + string(os.PathSeparator) + "export"
+	SetupFolder(exportFolder, "ExportFolder", "Export folder:")
 
 	tempFolder := os.TempDir() + "com.olympum.Oarsman"
 	SetupFolder(tempFolder, "TempFolder", "Temp folder:")
