@@ -3,6 +3,7 @@ package commands
 import (
 	"os"
 	"os/user"
+
 	"github.com/olympum/oarsman/util"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
@@ -84,6 +85,7 @@ func AddCommands() {
 	RootCmd.AddCommand(versionCmd)
 	RootCmd.AddCommand(trainCmd)
 	RootCmd.AddCommand(exportCmd)
+	RootCmd.AddCommand(shareCmd)
 	RootCmd.AddCommand(importCmd)
 	RootCmd.AddCommand(listCmd)
 	RootCmd.AddCommand(removeCmd)

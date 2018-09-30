@@ -3,9 +3,10 @@ package s4
 import (
 	"bufio"
 	"fmt"
+	"os"
+
 	"github.com/olympum/oarsman/util"
 	jww "github.com/spf13/jwalterweatherman"
-	"os"
 )
 
 type WriterFunc func(activity *Activity, writer *bufio.Writer)
@@ -48,7 +49,7 @@ func TCXWriter(activity *Activity, writer *bufio.Writer) {
 	fmt.Fprintln(w, "<?xml version=\"1.0\"?>")
 	fmt.Fprintln(w, "<TrainingCenterDatabase xmlns=\"http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/ActivityExtension/v2 http://www.garmin.com/xmlschemas/ActivityExtensionv2.xsd http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd\">")
 	fmt.Fprintln(w, "<Activities>")
-	fmt.Fprintln(w, "<Activity Sport=\"Other\">")
+	fmt.Fprintln(w, "<Activity Sport=\"Rowing\">")
 	fmt.Fprintf(w, "<Id>%s</Id>\n", laps[0].StartTimeZulu)
 	fmt.Fprint(w, "<Creator><Name>Oarsman (WaterRower S4)</Name></Creator>")
 	for n, lap := range laps {
