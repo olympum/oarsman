@@ -183,6 +183,8 @@ func (s4 *S4) onPacketReceived(b []byte) {
 		s4.wRHandler(b)
 	case 'I':
 		s4.informationHandler(b)
+	case 'A':
+		s4.applicationHandler(b)
 	case 'O':
 		s4.oKHandler()
 	case 'E':
@@ -287,6 +289,16 @@ func (s4 *S4) strokeHandler(b []byte) {
 			Time:  millis(),
 			Label: "stroke_end",
 			Value: 0})
+	}
+}
+
+func (s4 *S4) applicationHandler(b []byte) {
+	c := b[1:3]
+	msg := string(c)
+	if(msg == "IS"){
+		// (ab)use interactive msg to exit the workout
+		jww.INFO.Printf("Exit workout")
+		s4.Exit()
 	}
 }
 
