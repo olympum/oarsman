@@ -84,6 +84,7 @@ func Execute() {
 func AddCommands() {
 	RootCmd.AddCommand(versionCmd)
 	RootCmd.AddCommand(trainCmd)
+	RootCmd.AddCommand(listenCmd)
 	RootCmd.AddCommand(exportCmd)
 	RootCmd.AddCommand(shareCmd)
 	RootCmd.AddCommand(importCmd)
