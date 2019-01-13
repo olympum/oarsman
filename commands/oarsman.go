@@ -33,7 +33,6 @@ and TCX (Garmin Training Center).`,
 func InitializeConfig() {
 	if Verbose {
 		jww.SetStdoutThreshold(jww.LevelDebug)
-	} else {
 		jww.SetStdoutThreshold(jww.LevelInfo)
 	}
 

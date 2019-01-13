@@ -3,8 +3,6 @@ package s4
 import (
 	"bufio"
 	"bytes"
-	"github.com/huin/goserial"
-	jww "github.com/spf13/jwalterweatherman"
 	"io"
 	"io/ioutil"
 	"os"
@@ -12,6 +10,10 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/huin/goserial"
+	"github.com/olympum/oarsman/util"
+	jww "github.com/spf13/jwalterweatherman"
 )
 
 const (
@@ -95,6 +97,19 @@ func findUsbSerialModem() string {
 	}
 
 	return ""
+}
+
+func ListenS4(eventChannel chan<- AtomicEvent, aggregateEventChannel chan<- AggregateEvent, debug bool) S4Interface {
+	p := util.Progress("Waiting for S4 to connect... ")
+	for {
+		time.Sleep(5000 * time.Millisecond)
+		name := findUsbSerialModem()
+		if len(name) != 0 {
+			p.Stop()
+			break
+		}
+	}
+	return NewS4(eventChannel, aggregateEventChannel, debug)
 }
 
 func openPort() io.ReadWriteCloser {
@@ -295,7 +310,7 @@ func (s4 *S4) strokeHandler(b []byte) {
 func (s4 *S4) applicationHandler(b []byte) {
 	c := b[1:3]
 	msg := string(c)
-	if(msg == "IS"){
+	if msg == "IS" {
 		// (ab)use interactive msg to exit the workout
 		jww.INFO.Printf("Exit workout")
 		s4.Exit()

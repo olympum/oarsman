@@ -1,0 +1,1 @@
+scp -r /oarsman pi@rower.local:app/
