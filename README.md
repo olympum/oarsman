@@ -1,87 +1,71 @@
-# Oarsman: A WaterRower S4 Interface
+# SmarterRower: A WaterRower S4 Interface for Raspberry Pi
 
-Simple interface to the WaterRower S4 monitor (USB version)
+A simple and convenient to use Raspberry Pi logger for your WaterRower.
 
-This is a very early stage hobbyist program to interface with the
-WaterRower S4 monitor through the USB port. To be able to read from
-the S4, the Prolific PL2303 USB to serial adapter driver may need to
-be installed (OS specific). If required, there are versions for Mac
-and Windows on Prolific's site.
 
-The available commands are:
+## How it works
 
-    version                   Print the version number
-    train                     Start a rowing workout activity
-    export                    Export workout data from database
-    import                    Import workout data from database
-    list                      List all workout activities in the database
-    remove                    Remove an activity from the database
-    help [command]            Help about any command
+1. Install the logger app to your Raspberry with the install script
+2. Connect the Raspberry to WaterRower S4 via USB
+3. Start to row
+4. Hit 3x OK on the S4 when you are done. 
 
-The program uses a SQLite3 database to store metadata about the
-workout activities. The database file and all raw workout logs are
-stored under the folder `.oarsman` in the user's home directory. The
-database is created automatically if it does not exist the first time
-the program is run.
+The logger automatically converts your workout data to TCX file and saves it to a Dropbox directory. You can use the tcx file to share it on Strava, Endomondo, etc. 
 
-To do a short 200m test workout:
 
-    $ oarsman train --distance=200
+## Install
 
-... now ... get rowing. Once done, come back to your computer and hit
-RETURN (unfortunately that's the best I can do right now). The program
-will save a log file with the raw activity event data, insert the
-activity into the database, and export a TCX file. This is an example
-of a full 110-minute session:
+### Prerequerements: 
+- Installed Raspberry OS
+- SSH access to your Raspberry
 
-    $ oarsman train --duration=110m
-    INFO: 2014/11/10 Using configuration defaults
-    INFO: 2014/11/10 Working folder: /Users/brunofr/.oarsman
-    INFO: 2014/11/10 Db folder: /Users/brunofr/.oarsman/db
-    INFO: 2014/11/10 Workout folder: /Users/brunofr/.oarsman/workouts
-    INFO: 2014/11/10 Temp folder: /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman
-    INFO: 2014/11/10 Starting single duration workout: 6600 seconds
-    INFO: 2014/11/10 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-10T09:28:56Z.log
-    INFO: 2014/11/10 >>> Press RETURN to end workout ... <<<
-    INFO: 2014/11/10 WaterRower S4 02.10
+### Run ./install.sh 
+It will copy over the necessary files and installs everything you need on your Raspberry Pi. 
+Please note: from now on when your Raspberry is turned on will contionously listen for the WaterRower S4. 
 
-    INFO: 2014/11/10 Workout completed successfully
-    INFO: 2014/11/10 Importing activity from /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-10T09:28:56Z.log
-    INFO: 2014/11/10 Reading from /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-10T09:28:56Z.log
-    INFO: 2014/11/10 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/iWnsTDJtTgJXV_35f8aOlnVPu5zAsdWq71LRkOBxTW4=
-    INFO: 2014/11/10 Parsed activity with start time 1415611737000
-    INFO: 2014/11/10 Activity 1415611737000 saved to database
-    INFO: 2014/11/10 Activity log saved in /Users/brunofr/.oarsman/workouts/2014-11-10T09:28:57Z.log
-    INFO: 2014/11/10 Reading from /Users/brunofr/.oarsman/workouts/2014-11-10T09:28:57Z.log
-    INFO: 2014/11/10 Writing to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/4zd1VuBbntMg_HOsHU7MZte2vnhmvnnEmZmzR2jegDE=.log
-    INFO: 2014/11/10 Writing aggregate data to
-    /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-10T09:28:57Z.tcx
 
-If you did not save the TCX file, you can always export individual
-activities as TCX (Garmin Training Center). To find out the workout
-activity id, first list all available workouts using the `list`
-command:
+## Usage 
 
-    $ oarsman list
-    id,start_time,distance,duration,ave_speed,max_speed,ave_cadence,max_cadence,ave_power,max_power,calories,ave_hr,max_hr
-    1397805238100,2014-04-18T07:13:58Z,10000,2307,4.334633723450368,0,20.037261698440233,24,0,0,0,135.1585788561523,149
-    1397807779100,2014-04-18T07:56:19Z,10000,2312,4.325259515570934,0,20.91915261565068,24,0,0,0,136.65067012537824,143
-    1415685752200,2014-11-11T06:02:32Z,15467,3686,4.196147585458491,5.95,19.970519317748337,27,149.9281783009095,221,799,134.4238188654578,155
+```
+// workout listener
+srower listen --export --dropbox
 
-The `id` for the 110' workout we just did is `1415685752200`, which we
-can export with the `export` command:
+// upload to strava
+srower strava 67636812.log --token=2876828678e87w6w87786x786x832
 
-    $ oarsman export --id=1415685752200
-    INFO: 2014/11/11 Writing aggregate data to /var/folders/qv/g537wtg1543clytlpl0xn_tm0000gn/T/com.olympum.Oarsman/2014-11-11T06:02:32Z.tcx
+// upload to dropbox
+srower dropbox 6726872.log --token=27832676786263asd786287378622
 
-Note that the activity data events (distance, stroke rate, heart rate,
-etc.) are captured from the S4 every 25 ms in the raw log, alongside
-with pulse and stroke events. The exports, in TCX and CSV, are done at
-a 1000ms resolution (1Hz), i.e. using a track point every second.
+```
 
-All workout activity files follow the RFC3339 for naming based on date
-and time.
+## Piping commands
 
-## Modules ##
+srower listen --export --dropbox
 
-Since GOVERSION 1.1 this project uses [modules](https://github.com/golang/go/wiki/Modules), and no longer leverages vendoring and `govendor`.
+
+
+You can provide tokens via ENV variables
+
+
+## Trubleshooting
+
+### My RPi doesn't work at all when I connect to S4.
+
+Unfortunatelly the S4 can't output power so you need an external power source for your Pi. I use a small 0000 mAh powerbank which can keep my Zero alive for a day which means I can use it for weeks for my workouts.
+
+### I have an error during the installation 
+
+The installation script 
+
+
+### How can I restart logging? 
+
+After you hit 3x OK wait some seconds and give time to your Pi to save and export the workout. 
+Disconnect the Pi from the power source and connect it again (reset).  
+
+
+
+
+# Credits
+
+This is a simplified and refactored version of olympum/oarsman. Many thanks for olympum.
