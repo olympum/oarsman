@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var format string
+var inputFile string
 
 var exportCmd = &cobra.Command{
 	Use:   "export",
@@ -23,12 +23,12 @@ Training Center) format`,
 	},
 }
 
-func exportActivity(inputFile string) {
+func exportActivity(fileName string) {
 	if inputFile == "" {
 		jww.ERROR.Println("Nothing to export")
 		return
 	}
-	jww.INFO.Printf("Exporting %s\n", inputFile)
+	jww.INFO.Printf("Exporting %s\n", fileName)
 
 	eventChannel := make(chan s4.AtomicEvent)
 	aggregateEventChannel := make(chan s4.AggregateEvent)
@@ -36,7 +36,7 @@ func exportActivity(inputFile string) {
 	go collector.Run()
 
 
-	s, err := s4.NewReplayS4(eventChannel, aggregateEventChannel, false, inputFile, false)
+	s, err := s4.NewReplayS4(eventChannel, aggregateEventChannel, false, fileName, false)
 	if err != nil {
 		// TODO
 		return
@@ -46,11 +46,11 @@ func exportActivity(inputFile string) {
 
 	s.Run(nil)
 	
-	fileName := viper.GetString("ExportFolder") + string(os.PathSeparator) + "export-yeah.tcx" //TODO
+	exportFileName := viper.GetString("ExportFolder") + string(os.PathSeparator) + "export-yeah.tcx" //TODO
 
-	f, err := os.Create(fileName)
+	f, err := os.Create(exportFileName)
 	if err != nil {
-		jww.FATAL.Printf("Could not create %s\n", fileName)
+		jww.FATAL.Printf("Could not create %s\n", exportFileName)
 	}
 	defer f.Close()
 
@@ -62,5 +62,5 @@ func exportActivity(inputFile string) {
 }
 
 func init() {
-	exportCmd.Flags().Int64Var(&inputFile, "file", 0, "activity log")
+	exportCmd.Flags().StringVar(&inputFile, "file", "", "activity log")
 }

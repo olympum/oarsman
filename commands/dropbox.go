@@ -5,6 +5,7 @@ import (
 )
 
 var token string
+var inputFile string
 
 var dropboxCmd = &cobra.Command{
 	Use:   "dropbox",
@@ -12,15 +13,15 @@ var dropboxCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		InitializeConfig()
-		dropbox(fileName)
+		dropbox(inputFile)
 	},
 }
 
-func dropbox(fileName string) {
+func dropbox(inputFile string) {
 
 }
 
 func init() {
-	dropboxCmd.Flags().StringVar(&fileName, "file", "", "tcx file to upload")
+	dropboxCmd.Flags().StringVar(&inputFile, "file", "", "tcx file to upload")
 	dropboxCmd.Flags().StringVar(&token, "token", "", "Dropbox auth token")
 }

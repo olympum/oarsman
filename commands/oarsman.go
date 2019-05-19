@@ -12,7 +12,6 @@ import (
 
 var CfgFile string
 var Verbose bool
-var activityId int64
 
 var RootCmd = &cobra.Command{
 	Use:   "oarsman",

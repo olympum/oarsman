@@ -85,7 +85,7 @@ func Ready(prefix string) *spinner.Spinner {
 }
 
 
-func newTempFilename() string{
+func NewTempFilename() string{
 	stamp := MillisToZulu(time.Now().UnixNano() / 1000000)
 	return viper.GetString("TempFolder") + string(os.PathSeparator) + stamp + ".log"
 }

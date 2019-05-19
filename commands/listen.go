@@ -17,11 +17,11 @@ var listenCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		InitializeConfig()
 		eventChannel := make(chan s4.AtomicEvent)
-		tempFile := newTempFilename()
+		tempFile := util.NewTempFilename()
 
 		go s4.Logger(eventChannel, tempFile)
 		workout := s4.NewS4Workout()
-		s := s4.ListenS4(eventChannel, nil, debug)
+		s := s4.ListenS4(eventChannel, nil, false)
 
 		go util.Ready("S4 Found. Let's row.. ")
 

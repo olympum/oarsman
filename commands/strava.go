@@ -13,17 +13,19 @@ import (
 	jww "github.com/spf13/jwalterweatherman"
 )
 
+var inputFile string
+
 var stravaCmd = &cobra.Command{
 	Use:   "share",
 	Short: "Share workout on Strava",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		InitializeConfig()
-		shareActivity(fileName)
+		shareActivity(inputFile)
 	},
 }
 
-func shareActivity(fileName string) {
+func shareActivity(file string) {
 
 	extraParams := map[string]string{
 		"activity_type": "Rowing",
@@ -32,7 +34,7 @@ func shareActivity(fileName string) {
 		"data_type":     "tcx",
 	}
 
-	request, err := newfileUploadRequest("https://www.strava.com/api/v3/uploads", extraParams, "file", fileName)
+	request, err := newfileUploadRequest("https://www.strava.com/api/v3/uploads", extraParams, "file", file)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -86,6 +88,6 @@ func newfileUploadRequest(uri string, params map[string]string, paramName, path 
 }
 
 func init() {
-	stravaCmd.Flags().StringVar(&fileName, "fileName", "", "id of activity to export")
+	stravaCmd.Flags().StringVar(&inputFile, "file", "", "file to export")
 	stravaCmd.Flags().StringVar(&token, "token", "", "Strava auth token")
 }
