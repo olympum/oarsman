@@ -2,26 +2,22 @@ package commands
 
 import (
 	"os"
-	"time"
 
 	"github.com/olympum/oarsman/s4"
 	"github.com/olympum/oarsman/util"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var listenCmd = &cobra.Command{
 	Use:   "listen",
-	Short: "Listen and log the workout until Keypad OK long press is detected.",
+	Short: "Listen and log the workout until Keypad three OK press is detected.",
 	Long: `
-	Listen and log the workout until Keypad OK long press is detected.
+	Listen and log the workout until Keypad three OK press is detected.
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		InitializeConfig()
 		eventChannel := make(chan s4.AtomicEvent)
-		// todo this belongs to logger
-		stamp := util.MillisToZulu(time.Now().UnixNano() / 1000000)
-		tempFile := viper.GetString("TempFolder") + string(os.PathSeparator) + stamp + ".log"
+		tempFile := newTempFilename()
 
 		go s4.Logger(eventChannel, tempFile)
 		workout := s4.NewS4Workout()
@@ -31,11 +27,8 @@ var listenCmd = &cobra.Command{
 
 		s.Run(&workout)
 
-		activity := importActivity(tempFile, false)
-
-		if activity != nil {
-			exportActivity(activity.StartTimeMilliseconds)
-		}
+		exportActivity(tempFile)
+		
 		os.Exit(0)
 	},
 }

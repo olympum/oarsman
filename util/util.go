@@ -7,10 +7,11 @@ import (
 	"time"
 
 	jww "github.com/spf13/jwalterweatherman"
-
+	"github.com/spf13/viper"
 	"github.com/briandowns/spinner"
 	rpio "github.com/stianeikeland/go-rpio/v4"
 )
+
 
 func EnsureFolderExists(path string) error {
 	dir, err := os.Stat(path)
@@ -82,3 +83,10 @@ func Ready(prefix string) *spinner.Spinner {
 
 	return s
 }
+
+
+func newTempFilename() string{
+	stamp := MillisToZulu(time.Now().UnixNano() / 1000000)
+	return viper.GetString("TempFolder") + string(os.PathSeparator) + stamp + ".log"
+}
+

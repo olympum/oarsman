@@ -3,7 +3,6 @@ package s4
 import (
 	"bufio"
 	"fmt"
-	"os"
 
 	"github.com/olympum/oarsman/util"
 	jww "github.com/spf13/jwalterweatherman"
@@ -94,17 +93,4 @@ func TCXWriter(activity *Activity, writer *bufio.Writer) {
 	fmt.Fprintln(w, "</TrainingCenterDatabase>")
 
 	w.Flush()
-}
-
-func ExportCollectorEvents(activity *Activity, filename string, writerFunc WriterFunc) {
-	f, err := os.Create(filename)
-	if err != nil {
-		jww.FATAL.Printf("Could not create %s\n", filename)
-	}
-	defer f.Close()
-
-	var w *bufio.Writer
-	w = bufio.NewWriter(f)
-	jww.INFO.Printf("Writing aggregate data to %s\n", f.Name())
-	writerFunc(activity, w)
 }

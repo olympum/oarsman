@@ -1,1 +1,1 @@
-scp -r /oarsman pi@rower.local:app/
+scp -r /oarsman pi@rower.local:oarsman/

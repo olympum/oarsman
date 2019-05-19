@@ -16,11 +16,10 @@ var activityId int64
 
 var RootCmd = &cobra.Command{
 	Use:   "oarsman",
-	Short: "Oarsman is a workout management tool for the WaterRower S4",
+	Short: "SmarterRower is a workout logger and sharing tool for the WaterRower S4",
 	Long: `
-A log capturing tool connecting to the S4 via USB, will store and
-process workout data into a database, and allows exporting as CSV
-and TCX (Garmin Training Center).`,
+SmarterRower is a log capturing tool connecting to the S4 via USB, will store and
+process workout data into a logfile, and allows sharing it.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			cmd.Usage()
@@ -56,9 +55,6 @@ func InitializeConfig() {
 	workingFolder := user.HomeDir + string(os.PathSeparator) + ".oarsman"
 	SetupFolder(workingFolder, "WorkingFolder", "Working folder:")
 
-	dbFolder := workingFolder + string(os.PathSeparator) + "db"
-	SetupFolder(dbFolder, "DbFolder", "Db folder:")
-
 	workoutFolder := workingFolder + string(os.PathSeparator) + "workouts"
 	SetupFolder(workoutFolder, "WorkoutFolder", "Workout folder:")
 
@@ -82,13 +78,10 @@ func Execute() {
 
 func AddCommands() {
 	RootCmd.AddCommand(versionCmd)
-	RootCmd.AddCommand(trainCmd)
 	RootCmd.AddCommand(listenCmd)
 	RootCmd.AddCommand(exportCmd)
-	RootCmd.AddCommand(shareCmd)
-	RootCmd.AddCommand(importCmd)
-	RootCmd.AddCommand(listCmd)
-	RootCmd.AddCommand(removeCmd)
+	RootCmd.AddCommand(stravaCmd)
+	// RootCmd.AddCommand(dropboxCmd)
 }
 
 func init() {

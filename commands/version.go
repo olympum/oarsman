@@ -12,8 +12,8 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number",
 	Long: `
-The version number for this Oarsman build`,
+The version number for this SmarterRower build`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Oarsman for WaterRower S4 2.10,", VERSION, "-- Revision ", DEV)
+		fmt.Println("SmarterRower for WaterRower", VERSION, "-- Revision ", DEV)
 	},
 }
