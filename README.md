@@ -1,4 +1,4 @@
-# SmarterRower: A WaterRower S4 Interface for Raspberry Pi
+# SmarterRower
 
 A simple and convenient to use Raspberry Pi logger for your WaterRower.
 
