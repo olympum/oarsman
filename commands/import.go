@@ -10,6 +10,9 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"time"
+	"log"
+	"io"
+	"fmt"
 )
 
 var replay bool
@@ -74,7 +77,11 @@ func importActivity(inputFile string, replay bool) *s4.Activity {
 	jww.INFO.Printf("Activity %d saved to database\n", activity.StartTimeMilliseconds)
 
 	workoutFile := viper.GetString("WorkoutFolder") + string(os.PathSeparator) + util.MillisToZulu(activity.StartTimeMilliseconds) + ".log"
-	os.Rename(fqOfn, workoutFile)
+	err2 := moveFile(fqOfn, workoutFile)
+	if err2 != nil {
+		log.Fatal(err2)
+		return nil
+	}
 	jww.INFO.Printf("Activity log saved in %s\n", workoutFile)
 	return activity
 }
@@ -95,4 +102,29 @@ func randomId() string {
 	}
 
 	return base64.URLEncoding.EncodeToString(rb)
+}
+
+//https://gist.github.com/var23rav/23ae5d0d4d830aff886c3c970b8f6c6b
+func moveFile(sourcePath, destPath string) error {
+    inputFile, err := os.Open(sourcePath)
+    if err != nil {
+        return fmt.Errorf("Couldn't open source file: %s", err)
+    }
+    outputFile, err := os.Create(destPath)
+    if err != nil {
+        inputFile.Close()
+        return fmt.Errorf("Couldn't open dest file: %s", err)
+    }
+    defer outputFile.Close()
+    _, err = io.Copy(outputFile, inputFile)
+    inputFile.Close()
+    if err != nil {
+        return fmt.Errorf("Writing to output file failed: %s", err)
+    }
+    // The copy was successful, so now delete the original file
+    err = os.Remove(sourcePath)
+    if err != nil {
+        return fmt.Errorf("Failed removing original file: %s", err)
+    }
+    return nil
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"os/user"
+    "path/filepath"
 )
 
 var CfgFile string
@@ -62,7 +63,7 @@ func InitializeConfig() {
 	workoutFolder := workingFolder + string(os.PathSeparator) + "workouts"
 	SetupFolder(workoutFolder, "WorkoutFolder", "Workout folder:")
 
-	tempFolder := os.TempDir() + "com.olympum.Oarsman"
+	tempFolder := filepath.Join(os.TempDir(), "com.olympum.Oarsman")
 	SetupFolder(tempFolder, "TempFolder", "Temp folder:")
 }
 

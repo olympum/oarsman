@@ -86,10 +86,13 @@ type S4 struct {
 }
 
 func findUsbSerialModem() string {
-	contents, _ := ioutil.ReadDir("/dev")
+    //contents, _ := ioutil.ReadDir("/dev")
+    contents, _ := ioutil.ReadDir("/dev")
 
 	for _, f := range contents {
-		if strings.Contains(f.Name(), "cu.usbmodem") {
+		//if strings.Contains(f.Name(), "u.usbmodem") {
+			//return "/dev/" + f.Name()
+		if strings.Contains(f.Name(), "ttyACM0") {
 			return "/dev/" + f.Name()
 		}
 	}
